@@ -1,0 +1,96 @@
+.error-boundary {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  padding: 40px;
+}
+
+.error-content {
+  max-width: 600px;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 80px;
+  margin-bottom: 24px;
+  opacity: 0.5;
+}
+
+.error-content h1 {
+  margin: 0 0 16px;
+  font-size: 28px;
+  color: var(--text-primary);
+}
+
+.error-message {
+  margin: 0 0 24px;
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.error-details {
+  margin: 24px 0;
+  text-align: left;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.error-details summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-primary);
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.error-details summary:hover {
+  background: var(--bg-tertiary);
+}
+
+.error-details[open] summary {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.error-stack {
+  padding: 16px;
+  margin: 0;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error-stack strong {
+  color: var(--error-color);
+  display: block;
+  margin-bottom: 12px;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 24px 0;
+}
+
+.error-actions button {
+  padding: 12px 24px;
+  font-size: 14px;
+}
+
+.error-hint {
+  margin: 24px 0 0;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}

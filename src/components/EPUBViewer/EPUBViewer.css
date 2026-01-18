@@ -1,0 +1,104 @@
+.epub-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.epub-controls {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background-color: var(--bg-secondary);
+  flex-shrink: 0;
+  height: 50px;
+}
+
+.epub-content-wrapper {
+  flex: 1;
+  position: relative;
+  background-color: var(--bg-primary);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.epub-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* epub.js default manager view container */
+/* epub.js iframe - must allow CSS columns to work */
+.epub-content iframe {
+  border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.epub-navigation {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+}
+
+.nav-button {
+  padding: 8px 20px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.nav-button:hover {
+  background-color: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+.nav-button:active {
+  transform: translateY(1px);
+}
+
+/* Empty state */
+.epub-viewer-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  gap: var(--spacing-md);
+}
+
+.epub-viewer-empty-icon {
+  font-size: 64px;
+  opacity: 0.3;
+}
+
+.epub-viewer-empty-text {
+  font-size: 18px;
+}
+
+/* Loading state */
+.epub-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--spacing-md);
+}
+
+.epub-loading-text {
+  color: var(--text-secondary);
+  font-size: 16px;
+}

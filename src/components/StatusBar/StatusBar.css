@@ -1,0 +1,58 @@
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--statusbar-height);
+  padding: 0 16px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.status-left {
+  justify-content: flex-start;
+}
+
+.status-center {
+  justify-content: center;
+}
+
+.status-right {
+  justify-content: flex-end;
+}
+
+.chapter-name {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-info {
+  font-weight: 500;
+}
+
+.word-count-info {
+  font-weight: 500;
+}
+
+.status-placeholder {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* Hover effects */
+.status-section span:not(.status-placeholder) {
+  transition: color 0.2s;
+}
+
+.status-section span:not(.status-placeholder):hover {
+  color: var(--text-primary);
+}

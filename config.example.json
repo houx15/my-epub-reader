@@ -1,0 +1,19 @@
+{
+  "llm": {
+    "provider": "gemini",
+    "apiKey": "YOUR_GEMINI_API_KEY_HERE",
+    "baseUrl": "https://generativelanguage.googleapis.com",
+    "model": "gemini-3-pro-preview"
+  },
+  "display": {
+    "theme": "system",
+    "fontSize": 16,
+    "notesFontSize": 14
+  },
+  "export": {
+    "defaultPath": "~/Documents/EPUB-Notes"
+  },
+  "storage": {
+    "notesPath": ""
+  }
+}

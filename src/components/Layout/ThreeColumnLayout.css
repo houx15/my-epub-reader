@@ -1,0 +1,79 @@
+.three-column-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+  min-height: 0; /* Critical for flex children to shrink properly */
+  height: 100%;
+}
+
+.column {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0; /* Critical for nested flex to work */
+  height: 100%;
+}
+
+.column-left {
+  background-color: var(--bg-primary);
+  min-width: 250px;
+}
+
+.column-center {
+  background-color: var(--bg-primary);
+  min-width: 200px;
+}
+
+.column-right {
+  background-color: var(--bg-secondary);
+  min-width: 280px;
+}
+
+.column-right.collapsed {
+  min-width: 48px;
+}
+
+/* Resize handles */
+.resize-handle {
+  width: 4px;
+  background-color: var(--border-color);
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
+  position: relative;
+}
+
+.resize-handle:hover {
+  background-color: var(--accent-color);
+}
+
+.resize-handle.active {
+  background-color: var(--accent-color);
+}
+
+/* Expand the clickable area */
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .column-left {
+    min-width: 200px;
+  }
+
+  .column-center {
+    min-width: 150px;
+  }
+
+  .column-right {
+    min-width: 280px;
+  }
+}

@@ -1,0 +1,83 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production build
+dist/
+build/
+out/
+
+# Electron
+release/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# API Keys and Configuration
+config.json
+*.key
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Claude Code
+.claude/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Mac specific
+.AppleDouble
+.LSOverride
+
+# Electron-builder output
+dist-electron/
+
+# User data (books, notes, cache)
+userData/
+books/
+cache/
+
+# Generated output
+gemini-output/
+
+# Backup files
+*.bak
+*.backup
+
+# Allow example configuration
+!config.example.json
