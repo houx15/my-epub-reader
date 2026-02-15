@@ -100,7 +100,8 @@ export class GeminiLLMService {
    * Send a chat message and get response
    */
   async chat(userMessage: string, options: ChatOptions): Promise<string> {
-    const { conversationHistory = [], temperature = 0.7, maxTokens = 10000 } = options;
+    const { conversationHistory = [], maxTokens = 10000 } = options;
+    // Temperature is available in options.temperature (default: 0.7)
 
     // Build conversation history
     const contents: GeminiContent[] = [

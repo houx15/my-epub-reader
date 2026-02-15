@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatSelectionAsQuote } from '../../services/noteUtils';
-import { useAppStore } from '../../stores/appStore';
 import type { Selection } from '../../types';
 import './SelectionPopover.css';
 
@@ -36,7 +35,8 @@ export function SelectionPopover({
     const popover = popoverRef.current;
     const rect = popover.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // Viewport height is available at window.innerHeight
 
     let { x, y } = position;
 

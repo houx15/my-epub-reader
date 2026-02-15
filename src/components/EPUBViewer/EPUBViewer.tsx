@@ -1,10 +1,15 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { TableOfContents } from './TableOfContents';
 import { SelectionPopover } from './SelectionPopover';
 import { useSelection } from '../../hooks/useSelection';
 import { useAppStore } from '../../stores/appStore';
+import { BookLayout, BookLayoutRef } from '../BookLayout/BookLayout';
 import './EPUBViewer.css';
 import type { Chapter } from '../../types';
+
+export interface EPUBViewerRef {
+  triggerAnimation: (direction: 'forward' | 'backward') => void;
+}
 
 interface EPUBViewerProps {
   onRenderReady: (element: HTMLElement, width: number, height: number) => void;
@@ -15,72 +20,44 @@ interface EPUBViewerProps {
   onPrevPage: () => void;
 }
 
-export function EPUBViewer({
-  onRenderReady,
-  chapters,
-  currentChapter,
-  onChapterSelect,
-  onNextPage,
-  onPrevPage,
-}: EPUBViewerProps) {
-  const viewerRef = useRef<HTMLDivElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const isInitializingRef = useRef(false);
+export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EPUBViewer(
+  {
+    onRenderReady,
+    chapters,
+    currentChapter,
+    onChapterSelect,
+    onNextPage,
+    onPrevPage,
+  },
+  ref
+) {
+  const bookLayoutRef = useRef<BookLayoutRef>(null);
   const [isTOCOpen, setIsTOCOpen] = useState(false);
-  const [isRendered, setIsRendered] = useState(false);
-  const [bookId, setBookId] = useState<string | null>(null);
-
   const { requestNoteInsert, isLLMPanelCollapsed, toggleLLMPanel, currentBook, setCurrentSelection } = useAppStore();
+  
+  // Create a unique key that changes when the book is reloaded
+  // Use both bookId and a reload counter to force remount on re-open
+  const [reloadCounter, setReloadCounter] = useState(0);
+  
+  useEffect(() => {
+    if (currentBook?.id) {
+      // Increment reload counter whenever book changes
+      setReloadCounter(prev => prev + 1);
+    }
+  }, [currentBook?.id]);
+
   const { selection, popoverPosition, clearSelection, dismissPopover } = useSelection(
-    viewerRef,
+    { current: null } as React.RefObject<HTMLElement>, // BookLayout handles its own ref
     currentChapter,
     chapters
   );
 
-  // Reset isRendered when book changes
-  useEffect(() => {
-    if (currentBook?.id !== bookId) {
-      setBookId(currentBook?.id || null);
-      setIsRendered(false);
-      isInitializingRef.current = false;
-    }
-  }, [currentBook?.id, bookId]);
-
-  // Initialize EPUB rendering with actual dimensions
-  useEffect(() => {
-    if (viewerRef.current && wrapperRef.current && !isRendered) {
-      if (isInitializingRef.current) {
-        return;
-      }
-
-      isInitializingRef.current = true;
-
-      // Wait multiple frames to ensure layout is fully complete
-      const initRender = () => {
-        if (viewerRef.current && wrapperRef.current) {
-          const rect = wrapperRef.current.getBoundingClientRect();
-          const width = Math.floor(rect.width);
-          const height = Math.floor(rect.height);
-
-          // Only render if we have valid dimensions
-          if (width > 100 && height > 100) {
-            Promise.resolve(onRenderReady(viewerRef.current, width, height))
-              .then(() => {
-                setIsRendered(true);
-              })
-              .finally(() => {
-                isInitializingRef.current = false;
-              });
-          } else {
-            setTimeout(initRender, 100);
-          }
-        }
-      };
-
-      // Start with a slight delay to allow layout to stabilize
-      setTimeout(initRender, 50);
-    }
-  }, [onRenderReady, isRendered]);
+  // Expose animation trigger to parent
+  useImperativeHandle(ref, () => ({
+    triggerAnimation: (direction: 'forward' | 'backward') => {
+      bookLayoutRef.current?.triggerAnimation(direction);
+    },
+  }), []);
 
   const toggleTOC = () => {
     setIsTOCOpen(!isTOCOpen);
@@ -111,6 +88,11 @@ export function EPUBViewer({
     }
   };
 
+  // Calculate progress based on current chapter
+  const progress = currentBook && chapters.length > 0 && currentChapter
+    ? chapters.findIndex(ch => ch.id === currentChapter.id) / Math.max(1, chapters.length - 1)
+    : 0;
+
   return (
     <div className="epub-viewer">
       {/* Table of Contents */}
@@ -129,28 +111,21 @@ export function EPUBViewer({
         </button>
       </div>
 
-      {/* EPUB content container */}
-      <div ref={wrapperRef} className="epub-content-wrapper">
-        <div ref={viewerRef} className="epub-content" />
-      </div>
-
-      {/* Navigation controls */}
-      <div className="epub-navigation">
-        <button
-          className="nav-button nav-prev"
-          onClick={onPrevPage}
-          title="Previous page"
-        >
-          ← Previous
-        </button>
-        <button
-          className="nav-button nav-next"
-          onClick={onNextPage}
-          title="Next page"
-        >
-          Next →
-        </button>
-      </div>
+      {/* EPUB content container - now using BookLayout */}
+      {currentBook && (
+        <BookLayout
+          key={`${currentBook.id}-${reloadCounter}`}
+          ref={bookLayoutRef}
+          bookId={`${currentBook.id}-${reloadCounter}`}
+          onRenderReady={onRenderReady}
+          chapters={chapters}
+          currentChapter={currentChapter}
+          onChapterSelect={handleChapterSelect}
+          onNextPage={onNextPage}
+          onPrevPage={onPrevPage}
+          progress={progress}
+        />
+      )}
 
       {/* Selection popover */}
       {selection && popoverPosition && (
@@ -165,4 +140,4 @@ export function EPUBViewer({
       )}
     </div>
   );
-}
+});

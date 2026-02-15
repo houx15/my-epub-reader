@@ -1,4 +1,4 @@
-import React from 'react';
+// Toolbar component
 import './Toolbar.css';
 
 interface ToolbarProps {

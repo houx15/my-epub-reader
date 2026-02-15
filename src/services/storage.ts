@@ -61,7 +61,8 @@ export class StorageService {
         return null;
       }
 
-      return await window.electron.readJSON(metaPath);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return await window.electron.readJSON(metaPath) as any;
     } catch (error) {
       console.error('Failed to load book metadata:', error);
       return null;
@@ -123,7 +124,8 @@ export class StorageService {
         return [];
       }
 
-      const data = await window.electron.readJSON(chatPath);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await window.electron.readJSON(chatPath) as any;
       return data.sessions || [];
     } catch (error) {
       console.error('Failed to load chat history:', error);
@@ -141,7 +143,7 @@ export class StorageService {
     try {
       const exists = await window.electron.fileExists(indexPath);
       if (exists) {
-        index = await window.electron.readJSON(indexPath);
+        index = await window.electron.readJSON(indexPath) as BooksIndex;
       } else {
         index = { books: [] };
       }
@@ -193,7 +195,8 @@ export class StorageService {
         return [];
       }
 
-      const data = await window.electron.readJSON(highlightsPath);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await window.electron.readJSON(highlightsPath) as any;
       return data.highlights || [];
     } catch (error) {
       console.error('Failed to load highlights:', error);
@@ -213,7 +216,7 @@ export class StorageService {
         return { books: [] };
       }
 
-      return await window.electron.readJSON(indexPath);
+      return await window.electron.readJSON(indexPath) as Promise<BooksIndex>;
     } catch (error) {
       console.error('Failed to load books index:', error);
       return { books: [] };

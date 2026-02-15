@@ -1,4 +1,4 @@
-import React from 'react';
+// StatusBar component
 import type { Chapter } from '../../types';
 import './StatusBar.css';
 

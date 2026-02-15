@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { ThreeColumnLayout } from './components/Layout/ThreeColumnLayout';
-import { EPUBViewer } from './components/EPUBViewer/EPUBViewer';
+import { EPUBViewer, EPUBViewerRef } from './components/EPUBViewer/EPUBViewer';
 import { LLMPanel } from './components/LLMPanel/LLMPanel';
 import { NotesEditor } from './components/NotesEditor/NotesEditor';
 import { SettingsDialog } from './components/Settings/SettingsDialog';
@@ -13,6 +13,8 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
 import { useAppStore } from './stores/appStore';
 import { insertSummaryAfterSelection } from './services/noteUtils';
+
+// Window.electron is declared in types/index.ts
 
 function App() {
   const {
@@ -32,7 +34,6 @@ function App() {
     isLLMPanelCollapsed,
     toggleLLMPanel,
     currentSelection,
-    theme,
     notesFontSize,
   } = useAppStore();
 
@@ -47,6 +48,7 @@ function App() {
   } = useNotes();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const epubViewerRef = useRef<EPUBViewerRef>(null);
 
   // Initialize theme system and get effective theme
   const { effectiveTheme } = useTheme();
@@ -159,6 +161,22 @@ function App() {
   );
 
   /**
+   * Handle next page with animation
+   */
+  const handleNextPage = useCallback(async () => {
+    epubViewerRef.current?.triggerAnimation('forward');
+    await nextPage();
+  }, [nextPage]);
+
+  /**
+   * Handle previous page with animation
+   */
+  const handlePrevPage = useCallback(async () => {
+    epubViewerRef.current?.triggerAnimation('backward');
+    await prevPage();
+  }, [prevPage]);
+
+  /**
    * Setup keyboard shortcuts
    */
   useKeyboardShortcuts({
@@ -186,8 +204,8 @@ function App() {
         }
       }
     },
-    onNextPage: nextPage,
-    onPrevPage: prevPage,
+    onNextPage: handleNextPage,
+    onPrevPage: handlePrevPage,
     onOpenSettings: handleOpenSettings,
   });
 
@@ -232,12 +250,13 @@ function App() {
           <ThreeColumnLayout
             left={
               <EPUBViewer
+                ref={epubViewerRef}
                 onRenderReady={handleRenderReady}
                 chapters={chapters}
                 currentChapter={currentChapter}
                 onChapterSelect={navigateToChapter}
-                onNextPage={nextPage}
-                onPrevPage={prevPage}
+                onNextPage={handleNextPage}
+                onPrevPage={handlePrevPage}
               />
             }
             center={

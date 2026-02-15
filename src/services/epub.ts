@@ -1,4 +1,4 @@
-import ePub, { Book as EPubBook, Rendition, NavItem } from 'epubjs';
+import ePub, { Book as EPubBook, Rendition, NavItem, Contents } from 'epubjs';
 import { v4 as uuidv4 } from 'uuid';
 import type { Book, Chapter, TypographySettings } from '../types';
 
@@ -323,7 +323,8 @@ export class EPUBService {
       return;
     }
 
-    this.rendition.getContents().forEach((content) => {
+    const contents = this.rendition.getContents() as unknown as Contents[];
+    contents.forEach((content) => {
       const doc = content?.document;
       if (!doc || this.keyListenerDocs.has(doc)) {
         return;
@@ -363,11 +364,12 @@ export class EPUBService {
       return;
     }
 
-    this.rendition.on('relocated', (location: any) => {
-      if (location && location.start) {
+    this.rendition.on('relocated', (location: unknown) => {
+      const loc = location as { start?: { cfi: string; percentage?: number } };
+      if (loc && loc.start) {
         callback({
-          cfi: location.start.cfi,
-          percentage: location.start.percentage || 0,
+          cfi: loc.start.cfi,
+          percentage: loc.start.percentage || 0,
         });
       }
     });
@@ -415,7 +417,7 @@ export class EPUBService {
       return { currentPage: 0, totalPages: 0, percentage: 0 };
     }
 
-    const location = this.rendition.currentLocation() as any;
+    const location = this.rendition.currentLocation() as { start?: { cfi: string; percentage?: number; index?: number } };
     if (!location || !location.start) {
       return { currentPage: 0, totalPages: 0, percentage: 0 };
     }
@@ -481,9 +483,9 @@ export class EPUBService {
       // Clear any text selection before navigating
       window.getSelection()?.removeAllRanges();
 
-      const beforeLoc = this.rendition.currentLocation() as any;
+      const beforeLoc = this.rendition.currentLocation() as { start?: { cfi: string; index?: number } };
       await this.rendition.next();
-      const afterLoc = this.rendition.currentLocation() as any;
+      const afterLoc = this.rendition.currentLocation() as { start?: { cfi: string; index?: number } };
 
       if (beforeLoc?.start?.cfi === afterLoc?.start?.cfi && this.book) {
         const nextIndex = (beforeLoc?.start?.index ?? -1) + 1;
@@ -521,9 +523,9 @@ export class EPUBService {
       // Clear any text selection before navigating
       window.getSelection()?.removeAllRanges();
 
-      const beforeLoc = this.rendition.currentLocation() as any;
+      const beforeLoc = this.rendition.currentLocation() as { start?: { cfi: string; index?: number } };
       await this.rendition.prev();
-      const afterLoc = this.rendition.currentLocation() as any;
+      const afterLoc = this.rendition.currentLocation() as { start?: { cfi: string; index?: number } };
 
       if (beforeLoc?.start?.cfi === afterLoc?.start?.cfi && this.book) {
         const prevIndex = (beforeLoc?.start?.index ?? 0) - 1;
@@ -549,7 +551,7 @@ export class EPUBService {
       return null;
     }
 
-    const location = this.rendition.currentLocation() as any;
+    const location = this.rendition.currentLocation() as { start?: { cfi: string; percentage?: number; href?: string } };
     if (!location || !location.start) {
       return null;
     }
