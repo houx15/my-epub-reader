@@ -29,6 +29,7 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
   const bookSpreadRef = useRef<HTMLDivElement>(null);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward' | null>(null);
   const isAnimatingRef = useRef(false);
+  const isRenderReadyCalledRef = useRef(false);
 
   // Clamp progress to valid range [0, 1]
   const clampedProgress = Math.max(0, Math.min(1, progress));
@@ -77,11 +78,11 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
   }, [onPrevPage, onNextPage, triggerPageTurnAnimation]);
 
   // Use ResizeObserver to handle initial render and size changes
+  // Guarded with isRenderReadyCalledRef to prevent re-initialization on callback identity changes
   useEffect(() => {
-    if (!bookSpreadRef.current) return;
+    if (!bookSpreadRef.current || isRenderReadyCalledRef.current) return;
 
     const spreadElement = bookSpreadRef.current;
-    let isReadyCalled = false;
 
     const tryRenderReady = () => {
       const width = spreadElement.clientWidth;
@@ -89,7 +90,7 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
 
       if (width > 0 && height > 0) {
         onRenderReady(spreadElement, width, height);
-        isReadyCalled = true;
+        isRenderReadyCalledRef.current = true;
         return true;
       }
       return false;
@@ -99,13 +100,13 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
     if (!tryRenderReady()) {
       // If size not ready, set up ResizeObserver to wait for it
       const resizeObserver = new ResizeObserver((entries) => {
-        if (isReadyCalled) return;
+        if (isRenderReadyCalledRef.current) return;
         
         for (const entry of entries) {
           const { width, height } = entry.contentRect;
           if (width > 0 && height > 0) {
             onRenderReady(spreadElement, width, height);
-            isReadyCalled = true;
+            isRenderReadyCalledRef.current = true;
             resizeObserver.disconnect();
             break;
           }
