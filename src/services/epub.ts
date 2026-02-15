@@ -401,6 +401,15 @@ export class EPUBService {
     }
   }
 
+  /**
+   * Set font size for the EPUB content
+   */
+  setFontSize(size: number): void {
+    if (this.rendition) {
+      this.rendition.themes.override('font-size', `${size}px`);
+    }
+  }
+
   getProgress(): { currentPage: number; totalPages: number; percentage: number } {
     if (!this.book || !this.rendition) {
       return { currentPage: 0, totalPages: 0, percentage: 0 };
@@ -415,7 +424,9 @@ export class EPUBService {
     const totalLocations = this.book.locations.length();
     
     if (totalLocations > 0) {
-      const currentPage = Math.floor(percentage * totalLocations) + 1;
+      // Clamp currentPage to valid range [1, totalLocations]
+      // At percentage === 1, we want currentPage === totalLocations (not totalLocations + 1)
+      const currentPage = Math.min(Math.floor(percentage * totalLocations) + 1, totalLocations);
       return {
         currentPage,
         totalPages: totalLocations,

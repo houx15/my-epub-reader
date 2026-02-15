@@ -18,6 +18,7 @@ interface UseEPUBReturn {
   getCurrentCFI: () => string | null;
   renderToElement: (element: HTMLElement, width?: number, height?: number) => Promise<void>;
   setEPUBTheme: (theme: 'light' | 'dark') => void;
+  progress: { currentPage: number; totalPages: number; percentage: number };
 }
 
 /**
@@ -39,6 +40,7 @@ export function useEPUB(): UseEPUBReturn {
   const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [progress, setProgress] = useState({ currentPage: 0, totalPages: 0, percentage: 0 });
 
   const epubService = useRef(getEPUBService());
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -141,6 +143,9 @@ export function useEPUB(): UseEPUBReturn {
           return;
         }
 
+        // Update progress on location change
+        updateProgress();
+
         const updatedBook = {
           ...currentBook,
           lastReadPosition: {
@@ -222,61 +227,7 @@ export function useEPUB(): UseEPUBReturn {
     }
   }, [currentBook, chapters, setCurrentBook]);
 
-  /**
-   * Go to next page
-   */
-  const nextPage = useCallback(async () => {
-    if (!currentBook) {
-      return;
-    }
 
-    try {
-      await epubService.current.nextPage();
-
-      // Update reading position
-      const location = epubService.current.getCurrentLocation();
-      if (location) {
-        const updatedBook = {
-          ...currentBook,
-          lastReadPosition: {
-            ...currentBook.lastReadPosition,
-            cfi: location.cfi,
-          },
-        };
-        setCurrentBook(updatedBook);
-      }
-    } catch (err) {
-      console.error('Error going to next page:', err);
-    }
-  }, [currentBook, setCurrentBook]);
-
-  /**
-   * Go to previous page
-   */
-  const prevPage = useCallback(async () => {
-    if (!currentBook) {
-      return;
-    }
-
-    try {
-      await epubService.current.prevPage();
-
-      // Update reading position
-      const location = epubService.current.getCurrentLocation();
-      if (location) {
-        const updatedBook = {
-          ...currentBook,
-          lastReadPosition: {
-            ...currentBook.lastReadPosition,
-            cfi: location.cfi,
-          },
-        };
-        setCurrentBook(updatedBook);
-      }
-    } catch (err) {
-      console.error('Error going to previous page:', err);
-    }
-  }, [currentBook, setCurrentBook]);
 
   /**
    * Go to a specific CFI location
@@ -301,6 +252,72 @@ export function useEPUB(): UseEPUBReturn {
     return location ? location.cfi : null;
   }, []);
 
+  /**
+   * Update progress from EPUB service
+   */
+  const updateProgress = useCallback(() => {
+    const currentProgress = epubService.current.getProgress();
+    setProgress(currentProgress);
+  }, []);
+
+  /**
+   * Go to next page with progress update
+   */
+  const nextPage = useCallback(async () => {
+    if (!currentBook) {
+      return;
+    }
+
+    try {
+      await epubService.current.nextPage();
+      updateProgress();
+
+      // Update reading position
+      const location = epubService.current.getCurrentLocation();
+      if (location) {
+        const updatedBook = {
+          ...currentBook,
+          lastReadPosition: {
+            ...currentBook.lastReadPosition,
+            cfi: location.cfi,
+          },
+        };
+        setCurrentBook(updatedBook);
+      }
+    } catch (err) {
+      console.error('Error going to next page:', err);
+    }
+  }, [currentBook, setCurrentBook, updateProgress]);
+
+  /**
+   * Go to previous page with progress update
+   */
+  const prevPage = useCallback(async () => {
+    if (!currentBook) {
+      return;
+    }
+
+    try {
+      await epubService.current.prevPage();
+      updateProgress();
+
+      // Update reading position
+      const location = epubService.current.getCurrentLocation();
+      if (location) {
+        const updatedBook = {
+          ...currentBook,
+          lastReadPosition: {
+            ...currentBook.lastReadPosition,
+            cfi: location.cfi,
+          },
+        };
+        setCurrentBook(updatedBook);
+      }
+    } catch (err) {
+      console.error('Error going to previous page:', err);
+    }
+  }, [currentBook, setCurrentBook, updateProgress]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -322,5 +339,6 @@ export function useEPUB(): UseEPUBReturn {
     getCurrentCFI,
     renderToElement,
     setEPUBTheme,
+    progress,
   };
 }
