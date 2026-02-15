@@ -27,47 +27,109 @@ function forEachContent(rendition: Rendition | null, callback: (content: any) =>
   }
 }
 
-function parseCFIPosition(cfi: string): { start: number; end: number } | null {
+interface ParsedCFI {
+  basePath: string;
+  startPath: string;
+  endPath: string;
+  startOffset: number;
+  endOffset: number;
+}
+
+function parseCFI(cfi: string): ParsedCFI | null {
   if (!cfi || typeof cfi !== 'string') return null;
 
-  const cfiBody = cfi.replace(/^epubcfi\(/, '').replace(/\)$/, '');
-  const parts = cfiBody.split(',');
+  const match = cfi.match(/^epubcfi\((.*)\)$/);
+  if (!match) return null;
+
+  const body = match[1];
+  const parts: string[] = [];
+  let current = '';
+  let parenDepth = 0;
+
+  for (const char of body) {
+    if (char === '(') parenDepth++;
+    if (char === ')') parenDepth--;
+    if (char === ',' && parenDepth === 0) {
+      parts.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  parts.push(current);
 
   if (parts.length < 2) return null;
 
   const extractOffset = (part: string): number => {
-    const match = part.match(/:(\d+)/);
-    return match ? parseInt(match[1], 10) : 0;
+    const offsetMatch = part.match(/:(\d+)$/);
+    return offsetMatch ? parseInt(offsetMatch[1], 10) : 0;
   };
 
-  const baseSteps = parts[0];
-  const startOffset = extractOffset(parts[1]);
-  const endOffset = parts.length > 2 ? extractOffset(parts[2]) : startOffset;
-
-  let baseValue = 0;
-  const steps = baseSteps.split('/');
-  let multiplier = 1;
-  for (let i = steps.length - 1; i >= 0; i--) {
-    const step = steps[i];
-    if (step && /^\d+$/.test(step)) {
-      baseValue += parseInt(step, 10) * multiplier;
-      multiplier *= 1000;
-    }
-  }
+  const stripOffset = (part: string): string => {
+    return part.replace(/:\d+$/, '');
+  };
 
   return {
-    start: baseValue * 1000000 + startOffset,
-    end: baseValue * 1000000 + endOffset,
+    basePath: parts[0],
+    startPath: stripOffset(parts[1]),
+    endPath: parts.length > 2 ? stripOffset(parts[2]) : stripOffset(parts[1]),
+    startOffset: extractOffset(parts[1]),
+    endOffset: parts.length > 2 ? extractOffset(parts[2]) : extractOffset(parts[1]),
   };
 }
 
+function getPathSteps(path: string): number[] {
+  const steps: number[] = [];
+  const parts = path.split('/');
+  for (const part of parts) {
+    const numMatch = part.match(/^(\d+)/);
+    if (numMatch) {
+      steps.push(parseInt(numMatch[1], 10));
+    }
+  }
+  return steps;
+}
+
+function getCommonAncestorDepth(steps1: number[], steps2: number[]): number {
+  let depth = 0;
+  const minLen = Math.min(steps1.length, steps2.length);
+  for (let i = 0; i < minLen; i++) {
+    if (steps1[i] === steps2[i]) {
+      depth++;
+    } else {
+      break;
+    }
+  }
+  return depth;
+}
+
 function cfiRangesOverlap(cfi1: string, cfi2: string): boolean {
-  const pos1 = parseCFIPosition(cfi1);
-  const pos2 = parseCFIPosition(cfi2);
+  const parsed1 = parseCFI(cfi1);
+  const parsed2 = parseCFI(cfi2);
 
-  if (!pos1 || !pos2) return false;
+  if (!parsed1 || !parsed2) return false;
 
-  return pos1.start <= pos2.end && pos1.end >= pos2.start;
+  const baseSteps1 = getPathSteps(parsed1.basePath);
+  const baseSteps2 = getPathSteps(parsed2.basePath);
+
+  const commonBaseDepth = getCommonAncestorDepth(baseSteps1, baseSteps2);
+  const maxBaseDepth = Math.max(baseSteps1.length, baseSteps2.length);
+
+  if (commonBaseDepth < maxBaseDepth - 2) {
+    return false;
+  }
+
+  const fullSteps1 = [...baseSteps1, ...getPathSteps(parsed1.startPath)];
+  const fullSteps2 = [...baseSteps2, ...getPathSteps(parsed2.startPath)];
+
+  const commonDepth = getCommonAncestorDepth(fullSteps1, fullSteps2);
+  const minFullDepth = Math.min(fullSteps1.length, fullSteps2.length);
+
+  if (commonDepth < minFullDepth - 1) {
+    return false;
+  }
+
+  return parsed1.startOffset <= parsed2.endOffset && parsed1.endOffset >= parsed2.startOffset;
 }
 
 /**
