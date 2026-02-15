@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatSelectionAsQuote } from '../../services/noteUtils';
-import { useAppStore } from '../../stores/appStore';
-import type { Selection } from '../../types';
+import { ColorPicker } from '../Highlights/ColorPicker';
+import type { Selection, HighlightColor } from '../../types';
 import './SelectionPopover.css';
 
 interface SelectionPopoverProps {
@@ -9,38 +9,33 @@ interface SelectionPopoverProps {
   position: { x: number; y: number };
   onQuoteToNotes: (formattedQuote: string) => void;
   onDiscussWithAI: () => void;
+  onHighlight: (color: HighlightColor) => void;
   onClose: () => void;
   onDismiss: () => void;
 }
 
-/**
- * SelectionPopover - Floating menu for text selection actions
- */
 export function SelectionPopover({
   selection,
   position,
   onQuoteToNotes,
   onDiscussWithAI,
+  onHighlight,
   onClose,
   onDismiss,
 }: SelectionPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
-  /**
-   * Adjust position to keep popover within viewport
-   */
   useEffect(() => {
     if (!popoverRef.current) return;
 
     const popover = popoverRef.current;
     const rect = popover.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
 
     let { x, y } = position;
 
-    // Adjust horizontal position
     if (x + rect.width / 2 > viewportWidth - 10) {
       x = viewportWidth - rect.width / 2 - 10;
     }
@@ -48,43 +43,40 @@ export function SelectionPopover({
       x = rect.width / 2 + 10;
     }
 
-    // Adjust vertical position (appears above selection)
     if (y - rect.height < 10) {
-      // If not enough space above, show below
       y = y + 30;
     }
 
     setAdjustedPosition({ x, y });
-  }, [position]);
+  }, [position, showColorPicker]);
 
-  /**
-   * Handle Quote to Notes
-   */
   const handleQuoteToNotes = () => {
     const formattedQuote = formatSelectionAsQuote(selection);
     onQuoteToNotes(formattedQuote);
     onClose();
   };
 
-  /**
-   * Handle Discuss with AI
-   */
   const handleDiscussWithAI = () => {
     onDiscussWithAI();
     onDismiss();
   };
 
-  /**
-   * Handle Copy to Clipboard
-   */
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(selection.text);
-      // Could show a brief "Copied!" message here
       onClose();
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
     }
+  };
+
+  const handleHighlightClick = () => {
+    setShowColorPicker(!showColorPicker);
+  };
+
+  const handleColorSelect = (color: HighlightColor) => {
+    onHighlight(color);
+    onClose();
   };
 
   return (
@@ -100,18 +92,25 @@ export function SelectionPopover({
       <div className="popover-arrow"></div>
       <div className="popover-buttons">
         <button
+          className="popover-button popover-button--highlight"
+          onClick={handleHighlightClick}
+          title="Highlight selected text"
+        >
+          🖍 Highlight
+        </button>
+        <button
           className="popover-button"
           onClick={handleQuoteToNotes}
           title="Add quote to notes"
         >
-          📝 Quote to Notes
+          📝 Quote
         </button>
         <button
           className="popover-button"
           onClick={handleDiscussWithAI}
           title="Discuss this selection with AI"
         >
-          💬 Discuss with AI
+          💬 AI
         </button>
         <button
           className="popover-button"
@@ -121,6 +120,11 @@ export function SelectionPopover({
           📋 Copy
         </button>
       </div>
+      {showColorPicker && (
+        <div className="popover-color-picker">
+          <ColorPicker onColorSelect={handleColorSelect} size="medium" />
+        </div>
+      )}
     </div>
   );
 }

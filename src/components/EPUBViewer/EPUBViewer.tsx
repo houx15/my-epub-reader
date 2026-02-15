@@ -1,8 +1,11 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TableOfContents } from './TableOfContents';
 import { SelectionPopover } from './SelectionPopover';
+import { HighlightPopover } from '../Highlights/HighlightPopover';
 import { useSelection } from '../../hooks/useSelection';
+import { useHighlights } from '../../hooks/useHighlights';
 import { useAppStore } from '../../stores/appStore';
+import type { HighlightColor } from '../../types';
 import './EPUBViewer.css';
 import type { Chapter } from '../../types';
 
@@ -37,7 +40,17 @@ export function EPUBViewer({
     chapters
   );
 
-  // Reset isRendered when book changes
+  const {
+    createHighlight,
+    updateHighlight,
+    removeHighlight,
+    renderHighlights,
+    activeHighlight,
+    activeHighlightPosition,
+    loadHighlightsForBook,
+    clearActiveHighlight,
+  } = useHighlights();
+
   useEffect(() => {
     if (currentBook?.id !== bookId) {
       setBookId(currentBook?.id || null);
@@ -46,7 +59,12 @@ export function EPUBViewer({
     }
   }, [currentBook?.id, bookId]);
 
-  // Initialize EPUB rendering with actual dimensions
+  useEffect(() => {
+    if (currentBook?.id) {
+      loadHighlightsForBook(currentBook.id);
+    }
+  }, [currentBook?.id, loadHighlightsForBook]);
+
   useEffect(() => {
     if (viewerRef.current && wrapperRef.current && !isRendered) {
       if (isInitializingRef.current) {
@@ -55,18 +73,21 @@ export function EPUBViewer({
 
       isInitializingRef.current = true;
 
-      // Wait multiple frames to ensure layout is fully complete
       const initRender = () => {
         if (viewerRef.current && wrapperRef.current) {
           const rect = wrapperRef.current.getBoundingClientRect();
           const width = Math.floor(rect.width);
           const height = Math.floor(rect.height);
 
-          // Only render if we have valid dimensions
           if (width > 100 && height > 100) {
             Promise.resolve(onRenderReady(viewerRef.current, width, height))
               .then(() => {
                 setIsRendered(true);
+                if (currentBook?.id) {
+                  setTimeout(() => {
+                    renderHighlights();
+                  }, 100);
+                }
               })
               .finally(() => {
                 isInitializingRef.current = false;
@@ -77,10 +98,15 @@ export function EPUBViewer({
         }
       };
 
-      // Start with a slight delay to allow layout to stabilize
       setTimeout(initRender, 50);
     }
-  }, [onRenderReady, isRendered]);
+  }, [onRenderReady, isRendered, currentBook?.id, renderHighlights]);
+
+  useEffect(() => {
+    if (isRendered && currentBook?.id) {
+      renderHighlights();
+    }
+  }, [isRendered, currentBook?.id, renderHighlights]);
 
   const toggleTOC = () => {
     setIsTOCOpen(!isTOCOpen);
@@ -88,24 +114,39 @@ export function EPUBViewer({
 
   const handleChapterSelect = (href: string) => {
     onChapterSelect(href);
-    setIsTOCOpen(false); // Close TOC after selection
+    setIsTOCOpen(false);
   };
 
-  /**
-   * Handle quote to notes
-   */
   const handleQuoteToNotes = (formattedQuote: string) => {
     requestNoteInsert(formattedQuote);
   };
 
-  /**
-   * Handle discuss with AI
-   */
   const handleDiscussWithAI = () => {
     if (selection) {
       setCurrentSelection(selection);
     }
-    // Open LLM panel if collapsed
+    if (isLLMPanelCollapsed) {
+      toggleLLMPanel();
+    }
+  };
+
+  const handleHighlight = (color: HighlightColor) => {
+    if (selection) {
+      createHighlight(selection, color);
+      clearSelection();
+    }
+  };
+
+  const handleAskAI = (highlight: typeof activeHighlight) => {
+    if (highlight) {
+      setCurrentSelection({
+        text: highlight.text,
+        chapterId: highlight.chapterId,
+        chapterTitle: highlight.chapterTitle,
+        cfi: highlight.cfi,
+        timestamp: Date.now(),
+      });
+    }
     if (isLLMPanelCollapsed) {
       toggleLLMPanel();
     }
@@ -113,7 +154,6 @@ export function EPUBViewer({
 
   return (
     <div className="epub-viewer">
-      {/* Table of Contents */}
       <TableOfContents
         chapters={chapters}
         currentChapter={currentChapter}
@@ -122,19 +162,16 @@ export function EPUBViewer({
         onChapterSelect={handleChapterSelect}
       />
 
-      {/* Header controls */}
       <div className="epub-controls">
         <button className="btn-secondary" onClick={toggleTOC} title="Toggle Table of Contents">
           📑 {isTOCOpen ? 'Close' : 'Contents'}
         </button>
       </div>
 
-      {/* EPUB content container */}
       <div ref={wrapperRef} className="epub-content-wrapper">
         <div ref={viewerRef} className="epub-content" />
       </div>
 
-      {/* Navigation controls */}
       <div className="epub-navigation">
         <button
           className="nav-button nav-prev"
@@ -152,15 +189,27 @@ export function EPUBViewer({
         </button>
       </div>
 
-      {/* Selection popover */}
       {selection && popoverPosition && (
         <SelectionPopover
           selection={selection}
           position={popoverPosition}
           onQuoteToNotes={handleQuoteToNotes}
           onDiscussWithAI={handleDiscussWithAI}
+          onHighlight={handleHighlight}
           onClose={clearSelection}
           onDismiss={dismissPopover}
+        />
+      )}
+
+      {activeHighlight && activeHighlightPosition && (
+        <HighlightPopover
+          highlight={activeHighlight}
+          position={activeHighlightPosition}
+          onUpdateAnnotation={(id, annotation) => updateHighlight(id, { annotation })}
+          onChangeColor={(id, color) => updateHighlight(id, { color })}
+          onDelete={removeHighlight}
+          onAskAI={handleAskAI}
+          onClose={clearActiveHighlight}
         />
       )}
     </div>

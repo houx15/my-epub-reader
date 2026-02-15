@@ -1,0 +1,45 @@
+.color-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-picker--small {
+  gap: 6px;
+}
+
+.color-picker--medium {
+  gap: 10px;
+}
+
+.color-picker-dot {
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.color-picker--small .color-picker-dot {
+  width: 20px;
+  height: 20px;
+}
+
+.color-picker--medium .color-picker-dot {
+  width: 28px;
+  height: 28px;
+}
+
+.color-picker-dot:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.color-picker-dot--selected {
+  border-color: #333;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .color-picker-dot--selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}

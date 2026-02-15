@@ -73,3 +73,21 @@
 [data-theme="dark"] .popover-button:hover {
   box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
 }
+
+.popover-color-picker {
+  padding: 12px 8px 4px 8px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.popover-button--highlight {
+  position: relative;
+}
+
+.popover-button--highlight.active {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
