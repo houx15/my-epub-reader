@@ -15,12 +15,10 @@ import { marked } from 'marked';
 import TurndownService from 'turndown';
 import './NotesEditor.css';
 import type { Chapter } from '../../types';
-import { useAppStore } from '../../stores/appStore';
 
-// Custom extension for location links that preserves data-loc attribute
 const LocationLink = Mark.create({
   name: 'locationLink',
-  priority: 1001, // Higher than regular Link
+  priority: 1001,
 
   addAttributes() {
     return {
@@ -96,7 +94,6 @@ export function NotesEditor({
   const [viewMode, setViewMode] = useState<ViewMode>('write');
   const editorRef = useRef<import('monaco-editor').editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof import('monaco-editor') | null>(null);
-  const { noteInsertRequest, clearNoteInsertRequest } = useAppStore();
   const isApplyingContentRef = useRef(false);
   const lastMarkdownRef = useRef(content);
   const turndownRef = useRef(
@@ -146,7 +143,7 @@ export function NotesEditor({
   const editor = useEditor({
     extensions: [
       StarterKit,
-      LocationLink, // Custom extension for location links - must come before Link
+      LocationLink,
       Link.configure({
         openOnClick: false,
       }),
@@ -166,7 +163,6 @@ export function NotesEditor({
       },
       handleClick: (_view, _pos, event) => {
         const target = event.target as HTMLElement | null;
-        // Try to find location link - either by data-loc attribute or href starting with loc:
         let anchor: HTMLAnchorElement | null = target?.closest('[data-loc]') as HTMLAnchorElement | null;
         if (!anchor) {
           anchor = target?.closest('a[href^="loc:"]') as HTMLAnchorElement | null;
@@ -253,70 +249,6 @@ export function NotesEditor({
     isApplyingContentRef.current = false;
   }, [content, editor, replaceLocationComments]);
 
-  useEffect(() => {
-    if (!noteInsertRequest) {
-      return;
-    }
-
-    if (viewMode === 'write' && editor) {
-      const html = marked.parse(replaceLocationComments(noteInsertRequest)) as string;
-      const shouldAppend = !editor.isFocused;
-      if (shouldAppend) {
-        editor.commands.insertContentAt(editor.state.doc.content.size, html);
-        editor.commands.focus('end');
-      } else {
-        editor.commands.insertContent(html);
-        editor.commands.focus();
-      }
-      clearNoteInsertRequest();
-      return;
-    }
-
-    const monacoEditor = editorRef.current;
-    const monaco = monacoRef.current;
-
-    if (viewMode === 'source' && monacoEditor && monaco) {
-      const selection = monacoEditor.getSelection();
-      const hasFocus = monacoEditor.hasTextFocus();
-      let range: import('monaco-editor').Range | null = selection || null;
-
-      if (!range || !hasFocus) {
-        const model = monacoEditor.getModel();
-        if (model) {
-          const line = model.getLineCount();
-          const column = model.getLineMaxColumn(line);
-          range = new monaco.Range(line, column, line, column);
-        }
-      }
-
-      if (range) {
-        const model = monacoEditor.getModel();
-        const insertOffset = model
-          ? model.getOffsetAt({ lineNumber: range.startLineNumber, column: range.startColumn })
-          : null;
-        monacoEditor.executeEdits('insert-quote', [
-          {
-            range,
-            text: noteInsertRequest,
-            forceMoveMarkers: true,
-          },
-        ]);
-        monacoEditor.focus();
-        if (model && insertOffset !== null) {
-          const endOffset = insertOffset + noteInsertRequest.length;
-          const endPosition = model.getPositionAt(endOffset);
-          monacoEditor.setPosition(endPosition);
-          monacoEditor.revealPositionInCenter(endPosition);
-        }
-        clearNoteInsertRequest();
-        return;
-      }
-    }
-
-    onChange(`${content}${content.endsWith('\n') ? '' : '\n'}${noteInsertRequest}`);
-    clearNoteInsertRequest();
-  }, [noteInsertRequest, content, onChange, clearNoteInsertRequest, editor, replaceLocationComments, viewMode]);
-
   const formatLastSaved = () => {
     if (!lastSaved) return 'Not saved yet';
     const now = Date.now();
@@ -329,7 +261,6 @@ export function NotesEditor({
 
   return (
     <div className="notes-editor">
-      {/* Header with controls */}
       <div className="notes-header">
         <div className="notes-header-left">
           <h3>Notes</h3>
@@ -367,7 +298,6 @@ export function NotesEditor({
       </div>
       </div>
 
-      {/* Editor and Preview */}
       <div className={`notes-content notes-content-${viewMode}`}>
         {viewMode === 'write' && (
           <div className="notes-editor-pane">

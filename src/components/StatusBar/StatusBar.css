@@ -39,8 +39,19 @@
   font-weight: 500;
 }
 
-.word-count-info {
-  font-weight: 500;
+.progress-bar-container {
+  width: 120px;
+  height: 4px;
+  background-color: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--accent-color);
+  border-radius: 2px;
+  transition: width 0.3s ease;
 }
 
 .status-placeholder {

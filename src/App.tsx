@@ -1,21 +1,20 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Toolbar } from './components/Toolbar/Toolbar';
-import { ThreeColumnLayout } from './components/Layout/ThreeColumnLayout';
-import { EPUBViewer, EPUBViewerRef } from './components/EPUBViewer/EPUBViewer';
-import { LLMPanel } from './components/LLMPanel/LLMPanel';
-import { NotesEditor } from './components/NotesEditor/NotesEditor';
+import { BookLayout, BookLayoutRef } from './components/BookLayout';
+import { Notebook } from './components/Notebook/Notebook';
+import { AIOverlay } from './components/AIOverlay/AIOverlay';
+import { HighlightPopover } from './components/Highlights/HighlightPopover';
 import { SettingsDialog } from './components/Settings/SettingsDialog';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { LoadingSpinner } from './components/Loading/LoadingSpinner';
 import { useEPUB } from './hooks/useEPUB';
 import { useNotes } from './hooks/useNotes';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { useTheme } from './hooks/useTheme';
+import { useHighlights } from './hooks/useHighlights';
 import { useAppStore } from './stores/appStore';
-import { insertSummaryAfterSelection } from './services/noteUtils';
 import { getEPUBService } from './services/epub';
-
-// Window.electron is declared in types/index.ts
+import { insertSummaryAfterSelection } from './services/noteUtils';
+import type { Highlight, HighlightColor } from './types';
 
 function App() {
   const {
@@ -29,78 +28,66 @@ function App() {
     prevPage,
     renderToElement,
     goToLocation,
-    progress, // Real reading progress from EPUB service
+    progress,
   } = useEPUB();
 
   const {
-    isLLMPanelCollapsed,
-    toggleLLMPanel,
+    panelMode,
+    setPanelMode,
+    typography,
+    setTypography,
     currentSelection,
-    notesFontSize,
   } = useAppStore();
 
   const {
+    highlights,
+    updateHighlight,
+    removeHighlight,
+    loadHighlightsForBook,
+    activeHighlight,
+    activeHighlightPosition,
+    clearActiveHighlight,
+  } = useHighlights();
+
+  const {
     content: noteContent,
-    wordCount,
-    isSaving,
-    lastSaved,
     setContent: setNoteContent,
     loadNotes,
     saveNotes,
   } = useNotes();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const epubViewerRef = useRef<EPUBViewerRef>(null);
+  const [aiContext, setAiContext] = useState<{ text: string; cfi: string; chapterTitle: string } | null>(null);
+  const bookLayoutRef = useRef<BookLayoutRef>(null);
 
-  // Initialize theme system and get effective theme
-  const { effectiveTheme } = useTheme();
-
-  /**
-   * Load notes when book ID changes (not on every position update)
-   */
   useEffect(() => {
     if (currentBook) {
+      loadHighlightsForBook(currentBook.id);
       loadNotes(currentBook);
     }
-    // Only depend on book ID, not the entire currentBook object
-    // This prevents reloading notes on every page navigation
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentBook?.id, loadNotes]);
+  }, [currentBook?.id, loadHighlightsForBook, loadNotes]);
 
-  /**
-   * Register animation callbacks with EPUBService for iframe key handlers
-   */
   useEffect(() => {
     const epubService = getEPUBService();
-    // Register callbacks that trigger animation before page turn
+    epubService.applyTypography(typography);
+  }, [typography]);
+
+  useEffect(() => {
+    const epubService = getEPUBService();
     epubService.setAnimationCallbacks({
       beforeNextPage: () => {
-        epubViewerRef.current?.triggerAnimation('forward');
+        bookLayoutRef.current?.triggerAnimation('forward');
       },
       beforePrevPage: () => {
-        epubViewerRef.current?.triggerAnimation('backward');
+        bookLayoutRef.current?.triggerAnimation('backward');
       },
     });
 
     return () => {
-      // Clear callbacks on unmount
       epubService.setAnimationCallbacks(null);
     };
   }, []);
 
-  /**
-   * Handle jump to location from notes
-   */
-  const handleJumpToLocation = useCallback(
-    async (cfi: string) => {
-      await goToLocation(cfi);
-    },
-    [goToLocation]
-  );
-
-  /**
-   * Handle file open
-   */
   const handleOpenFile = useCallback(async () => {
     try {
       const result = await window.electron.openFileDialog();
@@ -113,42 +100,6 @@ function App() {
     }
   }, [loadBook]);
 
-  /**
-   * Handle export notes
-   */
-  const handleExportNotes = useCallback(async () => {
-    if (!currentBook || !noteContent) {
-      alert('No notes to export');
-      return;
-    }
-
-    try {
-      const result = await window.electron.showSaveDialog({
-        defaultPath: `${currentBook.title}-notes.md`,
-        filters: [{ name: 'Markdown', extensions: ['md'] }],
-      });
-
-      if (!result.canceled && result.filePath) {
-        const exportContent = noteContent.replace(/<!-- loc:[^>]+ -->\n?/g, '');
-        await window.electron.writeFile(result.filePath, exportContent);
-        alert('Notes exported successfully!');
-      }
-    } catch (error) {
-      console.error('Failed to export notes:', error);
-      alert('Failed to export notes. Please try again.');
-    }
-  }, [currentBook, noteContent]);
-
-  /**
-   * Handle settings dialog
-   */
-  const handleOpenSettings = useCallback(() => {
-    setSettingsOpen(true);
-  }, []);
-
-  /**
-   * Handle EPUB render ready
-   */
   const handleRenderReady = useCallback(
     async (element: HTMLElement, width: number, height: number) => {
       if (currentBook) {
@@ -162,13 +113,9 @@ function App() {
     [currentBook, renderToElement]
   );
 
-  /**
-   * Handle insert summary to notes
-   */
   const handleInsertSummary = useCallback(
     (summary: string) => {
       if (currentSelection) {
-        // Insert summary after the relevant quote
         const updated = insertSummaryAfterSelection(
           noteContent,
           currentSelection.text,
@@ -176,32 +123,68 @@ function App() {
         );
         setNoteContent(updated);
       } else {
-        // Append to end
         setNoteContent(noteContent + '\n\n' + summary + '\n\n---\n');
       }
     },
     [currentSelection, noteContent, setNoteContent]
   );
 
-  /**
-   * Handle next page with animation
-   */
+  const handleNavigateToHighlight = useCallback(
+    async (cfi: string) => {
+      await goToLocation(cfi);
+    },
+    [goToLocation]
+  );
+
+  const handleEditAnnotation = useCallback(
+    (id: string, annotation: string) => {
+      updateHighlight(id, { annotation });
+    },
+    [updateHighlight]
+  );
+
+  const handleChangeHighlightColor = useCallback(
+    (id: string, color: HighlightColor) => {
+      updateHighlight(id, { color });
+    },
+    [updateHighlight]
+  );
+
+  const handleAskAI = useCallback(
+    (highlight: Highlight) => {
+      setAiContext({
+        text: highlight.text,
+        cfi: highlight.cfi,
+        chapterTitle: highlight.chapterTitle,
+      });
+      clearActiveHighlight();
+      setPanelMode('ai');
+    },
+    [setPanelMode, clearActiveHighlight]
+  );
+
   const handleNextPage = useCallback(async () => {
-    epubViewerRef.current?.triggerAnimation('forward');
+    bookLayoutRef.current?.triggerAnimation('forward');
     await nextPage();
   }, [nextPage]);
 
-  /**
-   * Handle previous page with animation
-   */
   const handlePrevPage = useCallback(async () => {
-    epubViewerRef.current?.triggerAnimation('backward');
+    bookLayoutRef.current?.triggerAnimation('backward');
     await prevPage();
   }, [prevPage]);
 
-  /**
-   * Setup keyboard shortcuts
-   */
+  const handleToggleNotebook = useCallback(() => {
+    setPanelMode(panelMode === 'notebook' ? 'reading' : 'notebook');
+  }, [panelMode, setPanelMode]);
+
+  const handleToggleAI = useCallback(() => {
+    setPanelMode(panelMode === 'ai' ? 'reading' : 'ai');
+  }, [panelMode, setPanelMode]);
+
+  const handleEscape = useCallback(() => {
+    setPanelMode('reading');
+  }, [setPanelMode]);
+
   useKeyboardShortcuts({
     onOpenFile: handleOpenFile,
     onSaveNotes: async () => {
@@ -209,30 +192,14 @@ function App() {
         await saveNotes();
       }
     },
-    onExportNotes: handleExportNotes,
-    onToggleLLMPanel: toggleLLMPanel,
-    onNextChapter: () => {
-      if (chapters.length > 0 && currentChapter) {
-        const currentIndex = chapters.findIndex(ch => ch.id === currentChapter.id);
-        if (currentIndex < chapters.length - 1) {
-          navigateToChapter(chapters[currentIndex + 1].href);
-        }
-      }
-    },
-    onPrevChapter: () => {
-      if (chapters.length > 0 && currentChapter) {
-        const currentIndex = chapters.findIndex(ch => ch.id === currentChapter.id);
-        if (currentIndex > 0) {
-          navigateToChapter(chapters[currentIndex - 1].href);
-        }
-      }
-    },
+    onToggleAI: handleToggleAI,
+    onToggleNotebook: handleToggleNotebook,
+    onEscape: handleEscape,
     onNextPage: handleNextPage,
     onPrevPage: handlePrevPage,
-    onOpenSettings: handleOpenSettings,
+    onOpenSettings: () => setSettingsOpen(true),
   });
 
-  // Render empty state if no book loaded
   const renderEmptyState = () => (
     <div className="empty-state">
       <div className="empty-state-icon">📖</div>
@@ -244,89 +211,91 @@ function App() {
     </div>
   );
 
-  // Render loading state
   const renderLoadingState = () => (
     <div className="loading-state">
       <LoadingSpinner message="Loading book..." size="large" />
     </div>
   );
 
-
   return (
     <div className="app">
-      {/* Toolbar */}
       <Toolbar
         bookTitle={currentBook?.title || null}
         onOpenFile={handleOpenFile}
-        onExportNotes={handleExportNotes}
-        onOpenSettings={handleOpenSettings}
+        onOpenSettings={() => setSettingsOpen(true)}
         hasBook={!!currentBook}
+        onToggleNotebook={handleToggleNotebook}
+        onToggleAI={handleToggleAI}
+        panelMode={panelMode}
+        typography={typography}
+        onTypographyChange={setTypography}
       />
 
-      {/* Main Content */}
       {isLoading ? (
         renderLoadingState()
       ) : !currentBook ? (
         renderEmptyState()
       ) : (
         <>
-          <ThreeColumnLayout
-            left={
-              <EPUBViewer
-                ref={epubViewerRef}
-                onRenderReady={handleRenderReady}
-                chapters={chapters}
-                currentChapter={currentChapter}
-                onChapterSelect={navigateToChapter}
-                onNextPage={handleNextPage}
-                onPrevPage={handlePrevPage}
-                progress={progress.percentage} // Pass real reading progress from EPUB service
-              />
-            }
-            center={
-              <NotesEditor
-                content={noteContent}
-                onChange={setNoteContent}
-                wordCount={wordCount}
-                isSaving={isSaving}
-                lastSaved={lastSaved}
-                theme={effectiveTheme}
-                fontSize={notesFontSize}
-                onJumpToLocation={handleJumpToLocation}
-                chapters={chapters}
-              />
-            }
-            right={
-              <LLMPanel
-                bookTitle={currentBook.title}
-                bookId={currentBook.id}
-                isCollapsed={isLLMPanelCollapsed}
-                onToggle={toggleLLMPanel}
-                currentSelection={currentSelection}
-                onInsertSummaryToNotes={handleInsertSummary}
-              />
-            }
-            isRightCollapsed={isLLMPanelCollapsed}
+          <BookLayout
+            ref={bookLayoutRef}
+            bookId={currentBook.id}
+            onRenderReady={handleRenderReady}
+            chapters={chapters}
+            currentChapter={currentChapter}
+            onChapterSelect={navigateToChapter}
+            onNextPage={handleNextPage}
+            onPrevPage={handlePrevPage}
+            progress={progress.percentage}
           />
 
-          {/* Status Bar */}
+          <Notebook
+            isOpen={panelMode === 'notebook'}
+            onClose={() => setPanelMode('reading')}
+            highlights={highlights}
+            bookTitle={currentBook.title}
+            bookAuthor={currentBook.author}
+            onNavigateToHighlight={handleNavigateToHighlight}
+            onEditAnnotation={handleEditAnnotation}
+            onDeleteHighlight={removeHighlight}
+          />
+
+          <AIOverlay
+            isOpen={panelMode === 'ai'}
+            onClose={() => setPanelMode('reading')}
+            bookTitle={currentBook.title}
+            bookId={currentBook.id}
+            initialContext={aiContext}
+            onInsertToNotes={handleInsertSummary}
+          />
+
+          {activeHighlight && activeHighlightPosition && (
+            <HighlightPopover
+              highlight={activeHighlight}
+              position={activeHighlightPosition}
+              onUpdateAnnotation={handleEditAnnotation}
+              onChangeColor={handleChangeHighlightColor}
+              onDelete={removeHighlight}
+              onAskAI={handleAskAI}
+              onClose={clearActiveHighlight}
+            />
+          )}
+
           <StatusBar
             currentChapter={currentChapter}
             totalChapters={chapters.length}
             currentChapterIndex={
               currentChapter
-                ? chapters.findIndex(ch => ch.id === currentChapter.id)
+                ? chapters.findIndex((ch) => ch.id === currentChapter.id)
                 : 0
             }
-            wordCount={wordCount}
+            progress={progress.percentage}
           />
         </>
       )}
 
-      {/* Settings Dialog */}
       <SettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
-      {/* Inline styles for empty/loading states */}
       <style>{`
         .app {
           display: flex;

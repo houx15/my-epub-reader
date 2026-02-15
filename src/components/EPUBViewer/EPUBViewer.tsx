@@ -5,7 +5,7 @@ import { HighlightPopover } from '../Highlights/HighlightPopover';
 import { useSelection } from '../../hooks/useSelection';
 import { useHighlights } from '../../hooks/useHighlights';
 import { useAppStore } from '../../stores/appStore';
-import type { HighlightColor } from '../../types';
+import type { HighlightColor, Highlight } from '../../types';
 import { BookLayout, BookLayoutRef } from '../BookLayout/BookLayout';
 import './EPUBViewer.css';
 import type { Chapter } from '../../types';
@@ -21,7 +21,7 @@ interface EPUBViewerProps {
   onChapterSelect: (href: string) => void;
   onNextPage: () => void;
   onPrevPage: () => void;
-  progress: number; // Real reading progress (0-1) from EPUB service
+  progress: number;
 }
 
 export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EPUBViewer(
@@ -38,12 +38,9 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
 ) {
   const bookLayoutRef = useRef<BookLayoutRef>(null);
   const [isTOCOpen, setIsTOCOpen] = useState(false);
-  const { requestNoteInsert, isLLMPanelCollapsed, toggleLLMPanel, currentBook, setCurrentSelection } = useAppStore();
-  // Track the last book load time to force remount when same file is reopened
-  // This ensures BookLayout re-initializes properly on same-file reload
+  const { currentBook, setPanelMode, setCurrentSelection } = useAppStore();
   const [loadTimestamp, setLoadTimestamp] = useState(0);
   
-  // Increment timestamp whenever currentBook reference changes (including same-file reload)
   useEffect(() => {
     if (currentBook?.id) {
       setLoadTimestamp(Date.now());
@@ -51,7 +48,7 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
   }, [currentBook]);
 
   const { selection, popoverPosition, clearSelection, dismissPopover, highlightPopoverData } = useSelection(
-    { current: null } as React.RefObject<HTMLElement>, // BookLayout handles its own ref
+    { current: null } as React.RefObject<HTMLElement>,
     currentChapter,
     chapters
   );
@@ -71,7 +68,7 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
       loadHighlightsForBook(currentBook.id);
     }
   }, [currentBook?.id, loadHighlightsForBook]);
-  // Expose animation trigger to parent
+
   useImperativeHandle(ref, () => ({
     triggerAnimation: (direction: 'forward' | 'backward') => {
       bookLayoutRef.current?.triggerAnimation(direction);
@@ -87,17 +84,12 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
     setIsTOCOpen(false);
   };
 
-  const handleQuoteToNotes = (formattedQuote: string) => {
-    requestNoteInsert(formattedQuote);
-  };
-
   const handleDiscussWithAI = () => {
     if (selection) {
       setCurrentSelection(selection);
     }
-    if (isLLMPanelCollapsed) {
-      toggleLLMPanel();
-    }
+    setPanelMode('ai');
+    clearSelection();
   };
 
   const handleHighlight = (color: HighlightColor) => {
@@ -107,7 +99,7 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
     }
   };
 
-  const handleAskAI = (highlight: typeof activeHighlight) => {
+  const handleAskAI = (highlight: Highlight | null) => {
     if (highlight) {
       setCurrentSelection({
         text: highlight.text,
@@ -117,9 +109,8 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
         timestamp: Date.now(),
       });
     }
-    if (isLLMPanelCollapsed) {
-      toggleLLMPanel();
-    }
+    setPanelMode('ai');
+    clearActiveHighlight();
   };
 
   return (
@@ -154,7 +145,6 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
           Next →
         </button>
       </div>
-      {/* EPUB content container - now using BookLayout */}
       {currentBook && (
         <BookLayout
           key={`${currentBook.id}-${loadTimestamp}`}
@@ -174,7 +164,7 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
         <SelectionPopover
           selection={selection}
           position={popoverPosition}
-          onQuoteToNotes={handleQuoteToNotes}
+          onQuoteToNotes={() => {}}
           onDiscussWithAI={handleDiscussWithAI}
           onHighlight={handleHighlight}
           onClose={clearSelection}

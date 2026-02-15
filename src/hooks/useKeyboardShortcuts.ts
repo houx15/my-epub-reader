@@ -3,36 +3,25 @@ import { useEffect } from 'react';
 interface ShortcutHandlers {
   onOpenFile?: () => void;
   onSaveNotes?: () => void;
-  onExportNotes?: () => void;
-  onToggleLLMPanel?: () => void;
-  onNextChapter?: () => void;
-  onPrevChapter?: () => void;
+  onToggleAI?: () => void;
+  onToggleNotebook?: () => void;
+  onEscape?: () => void;
   onNextPage?: () => void;
   onPrevPage?: () => void;
-  onQuoteToNotes?: () => void;
-  onDiscussWithAI?: () => void;
-  onToggleTOC?: () => void;
   onOpenSettings?: () => void;
 }
 
-/**
- * React hook for managing keyboard shortcuts
- */
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Detect modifier key (Cmd on Mac, Ctrl on Windows/Linux)
       const isMod = event.metaKey || event.ctrlKey;
-      const isShift = event.shiftKey;
 
-      // Ignore shortcuts when typing in input fields
       const target = event.target as HTMLElement;
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.contentEditable === 'true'
       ) {
-        // Only allow certain shortcuts in input fields
         if (isMod && event.key === 's') {
           event.preventDefault();
           handlers.onSaveNotes?.();
@@ -40,8 +29,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         return;
       }
 
-      // Handle shortcuts
-      if (isMod && !isShift) {
+      if (isMod) {
         switch (event.key.toLowerCase()) {
           case 'o':
             event.preventDefault();
@@ -51,49 +39,26 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
             event.preventDefault();
             handlers.onSaveNotes?.();
             break;
-          case 'e':
-            event.preventDefault();
-            handlers.onExportNotes?.();
-            break;
           case '/':
             event.preventDefault();
-            handlers.onToggleLLMPanel?.();
+            handlers.onToggleAI?.();
+            break;
+          case 'b':
+            event.preventDefault();
+            handlers.onToggleNotebook?.();
             break;
           case ',':
             event.preventDefault();
             handlers.onOpenSettings?.();
             break;
-          case 'arrowright':
-            event.preventDefault();
-            handlers.onNextChapter?.();
-            break;
-          case 'arrowleft':
-            event.preventDefault();
-            handlers.onPrevChapter?.();
-            break;
-          case 't':
-            event.preventDefault();
-            handlers.onToggleTOC?.();
-            break;
         }
       }
 
-      // Cmd/Ctrl + Shift shortcuts
-      if (isMod && isShift) {
-        switch (event.key.toLowerCase()) {
-          case 'n':
-            event.preventDefault();
-            handlers.onQuoteToNotes?.();
-            break;
-          case 'l':
-            event.preventDefault();
-            handlers.onDiscussWithAI?.();
-            break;
-        }
+      if (event.key === 'Escape') {
+        handlers.onEscape?.();
       }
 
-      // Arrow keys without modifiers (page navigation)
-      if (!isMod && !isShift) {
+      if (!isMod) {
         switch (event.key) {
           case 'ArrowRight':
             event.preventDefault();
@@ -104,13 +69,6 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
             handlers.onPrevPage?.();
             break;
         }
-      }
-
-      // Help shortcut
-      if (isMod && event.key === '?') {
-        event.preventDefault();
-        // TODO: Show keyboard shortcuts cheatsheet
-        console.log('Keyboard shortcuts cheatsheet coming soon!');
       }
     };
 

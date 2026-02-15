@@ -20,7 +20,7 @@
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .book-title {
@@ -34,6 +34,7 @@
 .toolbar button {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--spacing-xs);
   white-space: nowrap;
   font-size: 14px;
@@ -44,4 +45,18 @@
 .toolbar button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn-icon {
+  padding: 8px 12px !important;
+  min-width: 36px;
+}
+
+.btn-icon.active {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.btn-icon.active:hover {
+  background-color: var(--accent-hover);
 }
