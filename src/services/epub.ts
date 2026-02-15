@@ -14,6 +14,9 @@ interface AnimationCallbacks {
   beforePrevPage?: () => void;
 }
 
+// Static callbacks that persist across service resets
+let globalAnimationCallbacks: AnimationCallbacks | null = null;
+
 /**
  * EPUB Service - Wraps epub.js for book management
  */
@@ -26,7 +29,6 @@ export class EPUBService {
   private resizeObserver: ResizeObserver | null = null;
   private renderVersion: number = 0;
   private keyListenerDocs: WeakSet<Document> = new WeakSet();
-  private animationCallbacks: AnimationCallbacks | null = null;
 
   /**
    * Generate a stable book ID from the file path
@@ -348,14 +350,14 @@ export class EPUBService {
         if (event.key === 'ArrowRight') {
           event.preventDefault();
           // Trigger animation callback before navigating
-          this.animationCallbacks?.beforeNextPage?.();
+          globalAnimationCallbacks?.beforeNextPage?.();
           this.nextPage();
         }
 
         if (event.key === 'ArrowLeft') {
           event.preventDefault();
           // Trigger animation callback before navigating
-          this.animationCallbacks?.beforePrevPage?.();
+          globalAnimationCallbacks?.beforePrevPage?.();
           this.prevPage();
         }
       };
@@ -397,9 +399,10 @@ export class EPUBService {
   /**
    * Set animation callbacks for page navigation
    * Called before page turns to trigger visual animations
+   * Stored globally to persist across service resets
    */
   setAnimationCallbacks(callbacks: AnimationCallbacks | null): void {
-    this.animationCallbacks = callbacks;
+    globalAnimationCallbacks = callbacks;
   }
 
   applyTypography(settings: Partial<TypographySettings>): void {
