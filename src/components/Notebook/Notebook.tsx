@@ -14,7 +14,18 @@ interface NotebookProps {
   onNavigateToHighlight: (cfi: string) => void;
   onEditAnnotation: (id: string, annotation: string) => void;
   onDeleteHighlight: (id: string) => void;
-  onExportNotes: (markdown: string) => void;
+  onExportNotes?: (markdown: string) => void;
+}
+
+async function exportViaElectron(markdown: string, bookTitle: string): Promise<void> {
+  const result = await window.electron.showSaveDialog({
+    defaultPath: `${bookTitle}-笔记.md`,
+    filters: [{ name: 'Markdown', extensions: ['md'] }],
+  });
+
+  if (!result.canceled && result.filePath) {
+    await window.electron.writeFile(result.filePath, markdown);
+  }
 }
 
 export function Notebook({
@@ -63,10 +74,15 @@ export function Notebook({
     });
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const markdown = generateNotesFromHighlights(highlights, bookTitle, bookAuthor);
     const cleanMarkdown = stripMarkdownForExport(markdown);
-    onExportNotes(cleanMarkdown);
+
+    if (onExportNotes) {
+      onExportNotes(cleanMarkdown);
+    } else {
+      await exportViaElectron(cleanMarkdown, bookTitle);
+    }
   };
 
   const handleClickHighlight = (highlight: Highlight) => {
