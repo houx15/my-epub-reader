@@ -14,7 +14,6 @@ interface NotebookProps {
   onNavigateToHighlight: (cfi: string) => void;
   onEditAnnotation: (id: string, annotation: string) => void;
   onDeleteHighlight: (id: string) => void;
-  onExportNotes?: (markdown: string) => void;
 }
 
 async function exportViaElectron(markdown: string, bookTitle: string): Promise<void> {
@@ -37,7 +36,6 @@ export function Notebook({
   onNavigateToHighlight,
   onEditAnnotation,
   onDeleteHighlight,
-  onExportNotes,
 }: NotebookProps) {
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
     new Set()
@@ -77,12 +75,7 @@ export function Notebook({
   const handleExport = async () => {
     const markdown = generateNotesFromHighlights(highlights, bookTitle, bookAuthor);
     const cleanMarkdown = stripMarkdownForExport(markdown);
-
-    if (onExportNotes) {
-      onExportNotes(cleanMarkdown);
-    } else {
-      await exportViaElectron(cleanMarkdown, bookTitle);
-    }
+    await exportViaElectron(cleanMarkdown, bookTitle);
   };
 
   const handleClickHighlight = (highlight: Highlight) => {
