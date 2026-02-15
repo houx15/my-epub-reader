@@ -13,6 +13,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
 import { useAppStore } from './stores/appStore';
 import { insertSummaryAfterSelection } from './services/noteUtils';
+import { getEPUBService } from './services/epub';
 
 // Window.electron is declared in types/index.ts
 
@@ -28,6 +29,7 @@ function App() {
     prevPage,
     renderToElement,
     goToLocation,
+    progress, // Real reading progress from EPUB service
   } = useEPUB();
 
   const {
@@ -64,6 +66,27 @@ function App() {
     // This prevents reloading notes on every page navigation
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentBook?.id, loadNotes]);
+
+  /**
+   * Register animation callbacks with EPUBService for iframe key handlers
+   */
+  useEffect(() => {
+    const epubService = getEPUBService();
+    // Register callbacks that trigger animation before page turn
+    epubService.setAnimationCallbacks({
+      beforeNextPage: () => {
+        epubViewerRef.current?.triggerAnimation('forward');
+      },
+      beforePrevPage: () => {
+        epubViewerRef.current?.triggerAnimation('backward');
+      },
+    });
+
+    return () => {
+      // Clear callbacks on unmount
+      epubService.setAnimationCallbacks(null);
+    };
+  }, []);
 
   /**
    * Handle jump to location from notes
@@ -257,6 +280,7 @@ function App() {
                 onChapterSelect={navigateToChapter}
                 onNextPage={handleNextPage}
                 onPrevPage={handlePrevPage}
+                progress={progress.percentage} // Pass real reading progress from EPUB service
               />
             }
             center={

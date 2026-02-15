@@ -18,6 +18,7 @@ interface EPUBViewerProps {
   onChapterSelect: (href: string) => void;
   onNextPage: () => void;
   onPrevPage: () => void;
+  progress: number; // Real reading progress (0-1) from EPUB service
 }
 
 export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EPUBViewer(
@@ -28,6 +29,7 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
     onChapterSelect,
     onNextPage,
     onPrevPage,
+    progress,
   },
   ref
 ) {
@@ -35,16 +37,16 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
   const [isTOCOpen, setIsTOCOpen] = useState(false);
   const { requestNoteInsert, isLLMPanelCollapsed, toggleLLMPanel, currentBook, setCurrentSelection } = useAppStore();
   
-  // Create a unique key that changes when the book is reloaded
-  // Use both bookId and a reload counter to force remount on re-open
-  const [reloadCounter, setReloadCounter] = useState(0);
+  // Track the last book load time to force remount when same file is reopened
+  // This ensures BookLayout re-initializes properly on same-file reload
+  const [loadTimestamp, setLoadTimestamp] = useState(0);
   
+  // Increment timestamp whenever currentBook reference changes (including same-file reload)
   useEffect(() => {
     if (currentBook?.id) {
-      // Increment reload counter whenever book changes
-      setReloadCounter(prev => prev + 1);
+      setLoadTimestamp(Date.now());
     }
-  }, [currentBook?.id]);
+  }, [currentBook]);
 
   const { selection, popoverPosition, clearSelection, dismissPopover } = useSelection(
     { current: null } as React.RefObject<HTMLElement>, // BookLayout handles its own ref
@@ -88,11 +90,6 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
     }
   };
 
-  // Calculate progress based on current chapter
-  const progress = currentBook && chapters.length > 0 && currentChapter
-    ? chapters.findIndex(ch => ch.id === currentChapter.id) / Math.max(1, chapters.length - 1)
-    : 0;
-
   return (
     <div className="epub-viewer">
       {/* Table of Contents */}
@@ -114,9 +111,9 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
       {/* EPUB content container - now using BookLayout */}
       {currentBook && (
         <BookLayout
-          key={`${currentBook.id}-${reloadCounter}`}
+          key={`${currentBook.id}-${loadTimestamp}`}
           ref={bookLayoutRef}
-          bookId={`${currentBook.id}-${reloadCounter}`}
+          bookId={`${currentBook.id}-${loadTimestamp}`}
           onRenderReady={onRenderReady}
           chapters={chapters}
           currentChapter={currentChapter}

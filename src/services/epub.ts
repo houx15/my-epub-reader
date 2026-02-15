@@ -9,6 +9,11 @@ export interface RenderOptions {
   flow?: 'paginated' | 'scrolled';
 }
 
+interface AnimationCallbacks {
+  beforeNextPage?: () => void;
+  beforePrevPage?: () => void;
+}
+
 /**
  * EPUB Service - Wraps epub.js for book management
  */
@@ -21,6 +26,7 @@ export class EPUBService {
   private resizeObserver: ResizeObserver | null = null;
   private renderVersion: number = 0;
   private keyListenerDocs: WeakSet<Document> = new WeakSet();
+  private animationCallbacks: AnimationCallbacks | null = null;
 
   /**
    * Generate a stable book ID from the file path
@@ -341,11 +347,15 @@ export class EPUBService {
 
         if (event.key === 'ArrowRight') {
           event.preventDefault();
+          // Trigger animation callback before navigating
+          this.animationCallbacks?.beforeNextPage?.();
           this.nextPage();
         }
 
         if (event.key === 'ArrowLeft') {
           event.preventDefault();
+          // Trigger animation callback before navigating
+          this.animationCallbacks?.beforePrevPage?.();
           this.prevPage();
         }
       };
@@ -382,6 +392,14 @@ export class EPUBService {
     if (this.rendition) {
       this.rendition.themes.select(theme);
     }
+  }
+
+  /**
+   * Set animation callbacks for page navigation
+   * Called before page turns to trigger visual animations
+   */
+  setAnimationCallbacks(callbacks: AnimationCallbacks | null): void {
+    this.animationCallbacks = callbacks;
   }
 
   applyTypography(settings: Partial<TypographySettings>): void {
