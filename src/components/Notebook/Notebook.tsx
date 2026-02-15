@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { Highlight } from '../../types';
 import { NotebookEntry } from './NotebookEntry';
 import { generateNotesFromHighlights } from '../../services/notesGenerator';
+import { stripMarkdownForExport } from '../../services/noteUtils';
 import './Notebook.css';
 
 interface NotebookProps {
@@ -13,7 +14,6 @@ interface NotebookProps {
   onNavigateToHighlight: (cfi: string) => void;
   onEditAnnotation: (id: string, annotation: string) => void;
   onDeleteHighlight: (id: string) => void;
-  onExportNotes: () => void;
 }
 
 export function Notebook({
@@ -25,7 +25,6 @@ export function Notebook({
   onNavigateToHighlight,
   onEditAnnotation,
   onDeleteHighlight,
-  onExportNotes,
 }: NotebookProps) {
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
     new Set()
@@ -64,7 +63,8 @@ export function Notebook({
 
   const handleExport = () => {
     const markdown = generateNotesFromHighlights(highlights, bookTitle, bookAuthor);
-    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+    const cleanMarkdown = stripMarkdownForExport(markdown);
+    const blob = new Blob([cleanMarkdown], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -73,7 +73,6 @@ export function Notebook({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    onExportNotes();
   };
 
   const handleClickHighlight = (highlight: Highlight) => {
@@ -81,13 +80,9 @@ export function Notebook({
     onClose();
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
     <>
-      <div className="notebook-backdrop" onClick={onClose} />
+      <div className={`notebook-backdrop ${isOpen ? 'open' : ''}`} onClick={onClose} />
       <div className={`notebook-panel ${isOpen ? 'open' : ''}`}>
         <div className="notebook-header">
           <h3 className="notebook-title">笔记本</h3>
