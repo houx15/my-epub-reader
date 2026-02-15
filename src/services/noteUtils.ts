@@ -195,3 +195,10 @@ export function sanitizeForMarkdown(text: string): string {
 export function createChapterLink(chapterTitle: string, chapterId: string): string {
   return `[📍 ${chapterTitle}](#${chapterId})`;
 }
+
+/**
+ * Strip location anchors from markdown for clean export
+ */
+export function stripMarkdownForExport(content: string): string {
+  return content.replace(/<!-- loc:[^>]+ -->\n*/g, '');
+}
