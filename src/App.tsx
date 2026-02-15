@@ -312,8 +312,8 @@ function App() {
             <SelectionPopover
               selection={selection}
               position={popoverPosition}
-              onQuoteToNotes={() => {
-                setNoteContent(noteContent + '\n\n> ' + selection.text + '\n\n');
+              onQuoteToNotes={(formattedQuote) => {
+                setNoteContent(noteContent + formattedQuote);
                 clearSelection();
               }}
               onDiscussWithAI={handleDiscussWithAI}
