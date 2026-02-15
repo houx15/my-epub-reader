@@ -4,6 +4,7 @@ import { PageStack } from './PageStack';
 import './BookLayout.css';
 
 export interface BookLayoutProps {
+  bookId?: string;
   onRenderReady: (element: HTMLElement, width: number, height: number) => void;
   chapters: Chapter[];
   currentChapter: Chapter | null;
@@ -19,6 +20,7 @@ export interface BookLayoutRef {
 
 export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function BookLayout(
   {
+    bookId,
     onRenderReady,
     onNextPage,
     onPrevPage,
@@ -30,9 +32,18 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward' | null>(null);
   const isAnimatingRef = useRef(false);
   const isRenderReadyCalledRef = useRef(false);
+  const lastBookIdRef = useRef<string | undefined>(undefined);
 
   // Clamp progress to valid range [0, 1]
   const clampedProgress = Math.max(0, Math.min(1, progress));
+
+  // Reset render guard when bookId changes
+  useEffect(() => {
+    if (bookId !== lastBookIdRef.current) {
+      isRenderReadyCalledRef.current = false;
+      lastBookIdRef.current = bookId;
+    }
+  }, [bookId]);
 
   const triggerPageTurnAnimation = useCallback((direction: 'forward' | 'backward') => {
     if (isAnimatingRef.current || !bookSpreadRef.current) return;
@@ -79,6 +90,7 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
 
   // Use ResizeObserver to handle initial render and size changes
   // Guarded with isRenderReadyCalledRef to prevent re-initialization on callback identity changes
+  // Guard is reset when bookId changes (see effect above)
   useEffect(() => {
     if (!bookSpreadRef.current || isRenderReadyCalledRef.current) return;
 
