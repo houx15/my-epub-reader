@@ -8,7 +8,8 @@
   border-left: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
   transform: translateX(100%);
-  transition: transform 0.3s ease;
+  visibility: hidden;
+  transition: transform 0.3s ease, visibility 0s linear 0.3s;
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -16,6 +17,8 @@
 
 .ai-overlay.open {
   transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.3s ease, visibility 0s linear 0s;
 }
 
 .ai-overlay-backdrop {

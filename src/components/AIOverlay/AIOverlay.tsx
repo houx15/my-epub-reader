@@ -160,7 +160,10 @@ export function AIOverlay({
   return (
     <>
       {isOpen && <div className="ai-overlay-backdrop" onClick={onClose} />}
-      <div className={`ai-overlay ${isOpen ? 'open' : ''}`}>
+      <div
+        className={`ai-overlay ${isOpen ? 'open' : ''}`}
+        aria-hidden={!isOpen}
+      >
         <div className="ai-overlay-header">
           <h3>AI Assistant</h3>
           <div className="ai-header-actions">
@@ -187,15 +190,7 @@ export function AIOverlay({
           </div>
         </div>
 
-        {initialContext && (
-          <div className="ai-context">
-            <div className="ai-context-label">Discussing:</div>
-            <blockquote className="ai-context-quote">{initialContext.text}</blockquote>
-            <span className="ai-context-chapter">{initialContext.chapterTitle}</span>
-          </div>
-        )}
-
-        {!initialContext && selectionForDisplay && (
+        {selectionForDisplay && (
           <div className="ai-context">
             <div className="ai-context-label">Discussing:</div>
             <blockquote className="ai-context-quote">{selectionForDisplay.text}</blockquote>
@@ -245,7 +240,7 @@ export function AIOverlay({
             <div className="ai-empty-state">
               <p>💬 Start a conversation about your reading</p>
               <p className="ai-hint">
-                {selectionForDisplay || initialContext
+                {selectionForDisplay
                   ? 'Ask questions about the selected text'
                   : 'Select text in the book to discuss, or ask general questions'}
               </p>
@@ -309,7 +304,7 @@ export function AIOverlay({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={
-              selectionForDisplay || initialContext
+              selectionForDisplay
                 ? 'Ask about the selected text...'
                 : 'Ask a question about the book...'
             }
