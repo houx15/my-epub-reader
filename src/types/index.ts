@@ -133,7 +133,7 @@ export interface AppConfig {
     fontSize: number;
     notesFontSize: number;
   };
-  export: {
+  export?: {
     defaultPath: string;
   };
   storage?: {

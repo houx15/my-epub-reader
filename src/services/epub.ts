@@ -302,7 +302,9 @@ export class EPUBService {
       return;
     }
 
-    this.rendition.getContents().forEach((content) => {
+    const contents = this.rendition.getContents();
+    const contentsArray = Array.isArray(contents) ? contents : contents ? [contents] : [];
+    contentsArray.forEach((content: any) => {
       const doc = content?.document;
       if (!doc || this.keyListenerDocs.has(doc)) {
         return;

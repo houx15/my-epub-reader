@@ -52,7 +52,14 @@ export function useHighlights(): UseHighlightsReturn {
 
   useEffect(() => {
     highlightsRef.current = highlights;
-  }, [highlights]);
+
+    if (activeHighlight) {
+      const updatedHighlight = highlights.find((h) => h.id === activeHighlight.id);
+      if (updatedHighlight && JSON.stringify(updatedHighlight) !== JSON.stringify(activeHighlight)) {
+        setActiveHighlight(updatedHighlight);
+      }
+    }
+  }, [highlights, activeHighlight]);
 
   useEffect(() => {
     currentBookIdRef.current = currentBook?.id || null;

@@ -27,6 +27,49 @@ function forEachContent(rendition: Rendition | null, callback: (content: any) =>
   }
 }
 
+function parseCFIPosition(cfi: string): { start: number; end: number } | null {
+  if (!cfi || typeof cfi !== 'string') return null;
+
+  const cfiBody = cfi.replace(/^epubcfi\(/, '').replace(/\)$/, '');
+  const parts = cfiBody.split(',');
+
+  if (parts.length < 2) return null;
+
+  const extractOffset = (part: string): number => {
+    const match = part.match(/:(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  const baseSteps = parts[0];
+  const startOffset = extractOffset(parts[1]);
+  const endOffset = parts.length > 2 ? extractOffset(parts[2]) : startOffset;
+
+  let baseValue = 0;
+  const steps = baseSteps.split('/');
+  let multiplier = 1;
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const step = steps[i];
+    if (step && /^\d+$/.test(step)) {
+      baseValue += parseInt(step, 10) * multiplier;
+      multiplier *= 1000;
+    }
+  }
+
+  return {
+    start: baseValue * 1000000 + startOffset,
+    end: baseValue * 1000000 + endOffset,
+  };
+}
+
+function cfiRangesOverlap(cfi1: string, cfi2: string): boolean {
+  const pos1 = parseCFIPosition(cfi1);
+  const pos2 = parseCFIPosition(cfi2);
+
+  if (!pos1 || !pos2) return false;
+
+  return pos1.start <= pos2.end && pos1.end >= pos2.start;
+}
+
 /**
  * React hook for handling text selection in EPUB viewer
  */
@@ -62,7 +105,7 @@ export function useSelection(
       if (!highlights || highlights.length === 0) return null;
 
       for (const highlight of highlights) {
-        if (cfiRange === highlight.cfi) {
+        if (cfiRangesOverlap(cfiRange, highlight.cfi)) {
           return highlight;
         }
       }

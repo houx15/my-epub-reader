@@ -1,4 +1,3 @@
-import React from 'react';
 import './TableOfContents.css';
 import type { Chapter } from '../../types';
 

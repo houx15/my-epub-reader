@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { ThreeColumnLayout } from './components/Layout/ThreeColumnLayout';
 import { EPUBViewer } from './components/EPUBViewer/EPUBViewer';
@@ -32,7 +32,6 @@ function App() {
     isLLMPanelCollapsed,
     toggleLLMPanel,
     currentSelection,
-    theme,
     notesFontSize,
   } = useAppStore();
 
@@ -79,8 +78,8 @@ function App() {
   const handleOpenFile = useCallback(async () => {
     try {
       const result = await window.electron.openFileDialog();
-      if (!result.canceled && result.filePath) {
-        await loadBook(result.filePath);
+      if (!result.canceled && result.filePaths[0]) {
+        await loadBook(result.filePaths[0]);
       }
     } catch (error) {
       console.error('Failed to open file:', error);

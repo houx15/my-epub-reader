@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { marked } from 'marked';
 import type { Chapter } from '../../types';
 
@@ -35,7 +35,7 @@ export function MarkdownPreview({
     // First, process location anchors: <!-- loc:chapter-id:cfi-string -->
     const processedContent = content.replace(
       /<!-- loc:([^:]+):([^>]+) -->/g,
-      (match, chapterId, cfi) => {
+      (_match, chapterId, cfi) => {
         // Find chapter by ID
         const chapter = chapters.find(c => c.id === chapterId);
         const chapterTitle = chapter ? chapter.title : 'Unknown Chapter';

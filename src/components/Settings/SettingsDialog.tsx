@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '../../stores/appStore';
 import { createLLMService } from '../../services/llm';
 import './SettingsDialog.css';
@@ -64,7 +64,6 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
 
     try {
       const testService = createLLMService({
-        provider: 'gemini',
         apiKey: apiKey.trim(),
         model: 'gemini-3-pro-preview',
         baseUrl: 'https://generativelanguage.googleapis.com',
@@ -204,8 +203,8 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
           className="btn-secondary"
           onClick={async () => {
             const result = await window.electron.openDirectoryDialog();
-            if (!result.canceled && result.filePath) {
-              setNotesPath(result.filePath);
+            if (!result.canceled && result.filePaths[0]) {
+              setNotesPath(result.filePaths[0]);
             }
           }}
         >
