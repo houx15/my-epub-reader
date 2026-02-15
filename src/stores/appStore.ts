@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Book, Selection, AppConfig } from '../types';
+import type { Book, Selection, AppConfig, Highlight, TypographySettings, PanelMode } from '../types';
 
 interface AppState {
   // Book state
@@ -32,6 +32,21 @@ interface AppState {
   // Selection state
   currentSelection: Selection | null;
   setCurrentSelection: (selection: Selection | null) => void;
+
+  // Highlights state
+  highlights: Highlight[];
+  setHighlights: (highlights: Highlight[]) => void;
+  addHighlight: (highlight: Highlight) => void;
+  updateHighlight: (id: string, updates: Partial<Highlight>) => void;
+  removeHighlight: (id: string) => void;
+
+  // Typography state
+  typography: TypographySettings;
+  setTypography: (settings: Partial<TypographySettings>) => void;
+
+  // Panel mode (replaces isLLMPanelCollapsed concept)
+  panelMode: PanelMode;
+  setPanelMode: (mode: PanelMode) => void;
 
   // Loading states
   isLoadingBook: boolean;
@@ -69,6 +84,25 @@ export const useAppStore = create<AppState>((set) => ({
   // Selection state
   currentSelection: null,
   setCurrentSelection: (selection) => set({ currentSelection: selection }),
+
+  // Highlights state
+  highlights: [],
+  setHighlights: (highlights) => set({ highlights }),
+  addHighlight: (highlight) => set((state) => ({ highlights: [...state.highlights, highlight] })),
+  updateHighlight: (id, updates) => set((state) => ({
+    highlights: state.highlights.map(h => h.id === id ? { ...h, ...updates } : h)
+  })),
+  removeHighlight: (id) => set((state) => ({
+    highlights: state.highlights.filter(h => h.id !== id)
+  })),
+
+  // Typography state
+  typography: { fontFamily: 'Georgia', fontSize: 18, lineHeight: 1.8, backgroundColor: '#fefefe' },
+  setTypography: (settings) => set((state) => ({ typography: { ...state.typography, ...settings } })),
+
+  // Panel mode (replaces isLLMPanelCollapsed concept)
+  panelMode: 'reading' as PanelMode,
+  setPanelMode: (mode) => set({ panelMode: mode }),
 
   // Loading states
   isLoadingBook: false,

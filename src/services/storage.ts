@@ -1,4 +1,4 @@
-import type { Book, ChatSession, BooksIndex } from '../types';
+import type { Book, ChatSession, BooksIndex, Highlight } from '../types';
 
 // Simple path join utility for renderer process (works for both Unix and Windows)
 function joinPath(...parts: string[]): string {
@@ -168,6 +168,37 @@ export class StorageService {
     }
 
     await window.electron.writeJSON(indexPath, index);
+  }
+
+  /**
+   * Save highlights for a book
+   */
+  async saveHighlights(bookId: string, highlights: Highlight[]): Promise<void> {
+    const bookDir = this.getBookDir(bookId);
+    await window.electron.ensureDir(bookDir);
+
+    const highlightsPath = joinPath(bookDir, 'highlights.json');
+    await window.electron.writeJSON(highlightsPath, { highlights });
+  }
+
+  /**
+   * Load highlights for a book
+   */
+  async loadHighlights(bookId: string): Promise<Highlight[]> {
+    try {
+      const highlightsPath = joinPath(this.getBookDir(bookId), 'highlights.json');
+      const exists = await window.electron.fileExists(highlightsPath);
+
+      if (!exists) {
+        return [];
+      }
+
+      const data = await window.electron.readJSON(highlightsPath);
+      return data.highlights || [];
+    } catch (error) {
+      console.error('Failed to load highlights:', error);
+      return [];
+    }
   }
 
   /**

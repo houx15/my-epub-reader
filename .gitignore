@@ -81,3 +81,4 @@ gemini-output/
 
 # Allow example configuration
 !config.example.json
+TASK.md

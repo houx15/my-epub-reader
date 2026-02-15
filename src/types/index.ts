@@ -29,6 +29,30 @@ export interface Selection {
   timestamp: number;
 }
 
+export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink' | 'orange';
+
+export interface Highlight {
+  id: string;
+  bookId: string;
+  cfi: string;               // epub.js CFI range string
+  text: string;               // highlighted text content
+  color: HighlightColor;
+  annotation: string;         // user annotation text (can be empty)
+  chapterId: string;
+  chapterTitle: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface TypographySettings {
+  fontFamily: string;          // e.g. 'Georgia', 'system-ui', 'Merriweather'
+  fontSize: number;            // in px, 14-28
+  lineHeight: number;          // multiplier, 1.4-2.2
+  backgroundColor: string;    // hex color for reading background
+}
+
+export type PanelMode = 'reading' | 'notebook' | 'ai';
+
 // LLM related types
 export interface ChatMessage {
   role: 'user' | 'assistant';
