@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import type { Chapter } from '../../types';
 import { PageStack } from './PageStack';
 import './BookLayout.css';
@@ -13,12 +13,19 @@ export interface BookLayoutProps {
   progress: number;
 }
 
-export function BookLayout({
-  onRenderReady,
-  onNextPage,
-  onPrevPage,
-  progress,
-}: BookLayoutProps) {
+export interface BookLayoutRef {
+  triggerAnimation: (direction: 'forward' | 'backward') => void;
+}
+
+export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function BookLayout(
+  {
+    onRenderReady,
+    onNextPage,
+    onPrevPage,
+    progress,
+  },
+  ref
+) {
   const bookSpreadRef = useRef<HTMLDivElement>(null);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward' | null>(null);
   const isAnimatingRef = useRef(false);
@@ -46,6 +53,11 @@ export function BookLayout({
       }
     }, 450);
   }, []);
+
+  // Expose animation trigger to parent for keyboard navigation
+  useImperativeHandle(ref, () => ({
+    triggerAnimation: triggerPageTurnAnimation,
+  }), [triggerPageTurnAnimation]);
 
   const handleSpreadClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (!bookSpreadRef.current || isAnimatingRef.current) return;
@@ -143,4 +155,4 @@ export function BookLayout({
       <PageStack progress={clampedProgress} />
     </div>
   );
-}
+});

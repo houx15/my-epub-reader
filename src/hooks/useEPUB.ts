@@ -53,6 +53,8 @@ export function useEPUB(): UseEPUBReturn {
     setIsLoading(true);
     setIsLoadingBook(true);
     setError(null);
+    // Reset progress when loading a new book
+    setProgress({ currentPage: 0, totalPages: 0, percentage: 0 });
 
     try {
       // Clean up previous book if any
@@ -118,6 +120,14 @@ export function useEPUB(): UseEPUBReturn {
   }, [theme, currentBook]);
 
   /**
+   * Update progress from EPUB service
+   */
+  const updateProgress = useCallback(() => {
+    const currentProgress = epubService.current.getProgress();
+    setProgress(currentProgress);
+  }, []);
+
+  /**
    * Render book to a container element
    */
   const renderToElement = useCallback(async (element: HTMLElement, width?: number, height?: number) => {
@@ -132,19 +142,16 @@ export function useEPUB(): UseEPUBReturn {
       const effectiveTheme = getEffectiveTheme(theme);
       epubService.current.setTheme(effectiveTheme);
 
-      // Navigate to last read position if available
-      if (currentBook.lastReadPosition.cfi) {
-        await epubService.current.goToLocation(currentBook.lastReadPosition.cfi);
-      }
-
+      // Register relocation listener BEFORE navigating to last position
+      // This ensures we capture the initial location update
       epubService.current.onRelocated(async (location) => {
+        // Update progress on every relocation
+        updateProgress();
+
         if (!currentBook) return;
         if (!location.cfi || location.cfi === lastSavedCFIRef.current) {
           return;
         }
-
-        // Update progress on location change
-        updateProgress();
 
         const updatedBook = {
           ...currentBook,
@@ -170,13 +177,18 @@ export function useEPUB(): UseEPUBReturn {
           }
         }, 500);
       });
+
+      // Navigate to last read position after listener is registered
+      if (currentBook.lastReadPosition.cfi) {
+        await epubService.current.goToLocation(currentBook.lastReadPosition.cfi);
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to render book');
       setError(error);
       console.error('Error rendering book:', error);
       throw error;
     }
-  }, [currentBook, theme]);
+  }, [currentBook, theme, updateProgress]);
 
   /**
    * Navigate to a chapter
@@ -250,14 +262,6 @@ export function useEPUB(): UseEPUBReturn {
   const getCurrentCFI = useCallback((): string | null => {
     const location = epubService.current.getCurrentLocation();
     return location ? location.cfi : null;
-  }, []);
-
-  /**
-   * Update progress from EPUB service
-   */
-  const updateProgress = useCallback(() => {
-    const currentProgress = epubService.current.getProgress();
-    setProgress(currentProgress);
   }, []);
 
   /**
