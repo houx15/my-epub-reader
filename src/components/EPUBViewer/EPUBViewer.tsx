@@ -60,7 +60,6 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
     createHighlight,
     updateHighlight,
     removeHighlight,
-    renderHighlights,
     activeHighlight,
     activeHighlightPosition,
     loadHighlightsForBook,
@@ -68,61 +67,10 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
   } = useHighlights();
 
   useEffect(() => {
-    if (currentBook?.id !== bookId) {
-      setBookId(currentBook?.id || null);
-      setIsRendered(false);
-      isInitializingRef.current = false;
-    }
-  }, [currentBook?.id, bookId]);
-
-  useEffect(() => {
     if (currentBook?.id) {
       loadHighlightsForBook(currentBook.id);
     }
   }, [currentBook?.id, loadHighlightsForBook]);
-
-  useEffect(() => {
-    if (viewerRef.current && wrapperRef.current && !isRendered) {
-      if (isInitializingRef.current) {
-        return;
-      }
-
-      isInitializingRef.current = true;
-
-      const initRender = () => {
-        if (viewerRef.current && wrapperRef.current) {
-          const rect = wrapperRef.current.getBoundingClientRect();
-          const width = Math.floor(rect.width);
-          const height = Math.floor(rect.height);
-
-          if (width > 100 && height > 100) {
-            Promise.resolve(onRenderReady(viewerRef.current, width, height))
-              .then(() => {
-                setIsRendered(true);
-                if (currentBook?.id) {
-                  setTimeout(() => {
-                    renderHighlights();
-                  }, 100);
-                }
-              })
-              .finally(() => {
-                isInitializingRef.current = false;
-              });
-          } else {
-            setTimeout(initRender, 100);
-          }
-        }
-      };
-
-      setTimeout(initRender, 50);
-    }
-  }, [onRenderReady, isRendered, currentBook?.id, renderHighlights]);
-
-  useEffect(() => {
-    if (isRendered && currentBook?.id) {
-      renderHighlights();
-    }
-  }, [isRendered, currentBook?.id, renderHighlights]);
   // Expose animation trigger to parent
   useImperativeHandle(ref, () => ({
     triggerAnimation: (direction: 'forward' | 'backward') => {
@@ -188,10 +136,6 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
         <button className="btn-secondary" onClick={toggleTOC} title="Toggle Table of Contents">
           📑 {isTOCOpen ? 'Close' : 'Contents'}
         </button>
-      </div>
-
-      <div ref={wrapperRef} className="epub-content-wrapper">
-        <div ref={viewerRef} className="epub-content" />
       </div>
 
       <div className="epub-navigation">

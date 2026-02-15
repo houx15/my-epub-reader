@@ -1,4 +1,4 @@
-import ePub, { Book as EPubBook, Rendition, NavItem, Contents } from 'epubjs';
+import ePub, { Book as EPubBook, Rendition, NavItem } from 'epubjs';
 import { v4 as uuidv4 } from 'uuid';
 import type { Book, Chapter, TypographySettings } from '../types';
 

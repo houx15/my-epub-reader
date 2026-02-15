@@ -104,8 +104,8 @@ function App() {
   const handleOpenFile = useCallback(async () => {
     try {
       const result = await window.electron.openFileDialog();
-      if (!result.canceled && result.filePaths[0]) {
-        await loadBook(result.filePaths[0]);
+      if (!result.canceled && result.filePath) {
+        await loadBook(result.filePath);
       }
     } catch (error) {
       console.error('Failed to open file:', error);
