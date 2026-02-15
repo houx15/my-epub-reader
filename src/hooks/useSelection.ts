@@ -90,46 +90,114 @@ function getPathSteps(path: string): number[] {
   return steps;
 }
 
-function getCommonAncestorDepth(steps1: number[], steps2: number[]): number {
-  let depth = 0;
+function comparePathSteps(steps1: number[], steps2: number[]): number {
   const minLen = Math.min(steps1.length, steps2.length);
   for (let i = 0; i < minLen; i++) {
-    if (steps1[i] === steps2[i]) {
-      depth++;
+    if (steps1[i] < steps2[i]) return -1;
+    if (steps1[i] > steps2[i]) return 1;
+  }
+  if (steps1.length < steps2.length) return -1;
+  if (steps1.length > steps2.length) return 1;
+  return 0;
+}
+
+interface CFIRange {
+  basePath: string;
+  startPath: string;
+  endPath: string;
+  startOffset: number;
+  endOffset: number;
+}
+
+function getCFIRange(cfi: string): CFIRange | null {
+  const parsed = parseCFI(cfi);
+  if (!parsed) return null;
+
+  const startSteps = [...getPathSteps(parsed.basePath), ...getPathSteps(parsed.startPath)];
+  const endSteps = [...getPathSteps(parsed.basePath), ...getPathSteps(parsed.endPath)];
+
+  const cmp = comparePathSteps(startSteps, endSteps);
+  if (cmp < 0 || (cmp === 0 && parsed.startOffset <= parsed.endOffset)) {
+    return {
+      basePath: parsed.basePath,
+      startPath: parsed.startPath,
+      endPath: parsed.endPath,
+      startOffset: parsed.startOffset,
+      endOffset: parsed.endOffset,
+    };
+  }
+  return {
+    basePath: parsed.basePath,
+    startPath: parsed.endPath,
+    endPath: parsed.startPath,
+    startOffset: parsed.endOffset,
+    endOffset: parsed.startOffset,
+  };
+}
+
+function compareCFIPoints(
+  basePath1: string,
+  path1: string,
+  offset1: number,
+  basePath2: string,
+  path2: string,
+  offset2: number
+): number {
+  if (basePath1 !== basePath2) {
+    return basePath1.localeCompare(basePath2);
+  }
+
+  const steps1 = [...getPathSteps(basePath1), ...getPathSteps(path1)];
+  const steps2 = [...getPathSteps(basePath2), ...getPathSteps(path2)];
+
+  const pathCmp = comparePathSteps(steps1, steps2);
+  if (pathCmp !== 0) return pathCmp;
+
+  return offset1 - offset2;
+}
+
+function cfiRangesOverlap(cfi1: string, cfi2: string): boolean {
+  const range1 = getCFIRange(cfi1);
+  const range2 = getCFIRange(cfi2);
+
+  if (!range1 || !range2) return false;
+
+  const baseSteps1 = getPathSteps(range1.basePath);
+  const baseSteps2 = getPathSteps(range2.basePath);
+
+  const minBaseLen = Math.min(baseSteps1.length, baseSteps2.length);
+  let commonBaseDepth = 0;
+  for (let i = 0; i < minBaseLen; i++) {
+    if (baseSteps1[i] === baseSteps2[i]) {
+      commonBaseDepth++;
     } else {
       break;
     }
   }
-  return depth;
-}
-
-function cfiRangesOverlap(cfi1: string, cfi2: string): boolean {
-  const parsed1 = parseCFI(cfi1);
-  const parsed2 = parseCFI(cfi2);
-
-  if (!parsed1 || !parsed2) return false;
-
-  const baseSteps1 = getPathSteps(parsed1.basePath);
-  const baseSteps2 = getPathSteps(parsed2.basePath);
-
-  const commonBaseDepth = getCommonAncestorDepth(baseSteps1, baseSteps2);
   const maxBaseDepth = Math.max(baseSteps1.length, baseSteps2.length);
-
   if (commonBaseDepth < maxBaseDepth - 2) {
     return false;
   }
 
-  const fullSteps1 = [...baseSteps1, ...getPathSteps(parsed1.startPath)];
-  const fullSteps2 = [...baseSteps2, ...getPathSteps(parsed2.startPath)];
+  const start1VsEnd2 = compareCFIPoints(
+    range1.basePath,
+    range1.startPath,
+    range1.startOffset,
+    range2.basePath,
+    range2.endPath,
+    range2.endOffset
+  );
 
-  const commonDepth = getCommonAncestorDepth(fullSteps1, fullSteps2);
-  const minFullDepth = Math.min(fullSteps1.length, fullSteps2.length);
+  const end1VsStart2 = compareCFIPoints(
+    range1.basePath,
+    range1.endPath,
+    range1.endOffset,
+    range2.basePath,
+    range2.startPath,
+    range2.startOffset
+  );
 
-  if (commonDepth < minFullDepth - 1) {
-    return false;
-  }
-
-  return parsed1.startOffset <= parsed2.endOffset && parsed1.endOffset >= parsed2.startOffset;
+  return start1VsEnd2 <= 0 && end1VsStart2 >= 0;
 }
 
 /**
