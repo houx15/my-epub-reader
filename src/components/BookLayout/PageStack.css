@@ -1,0 +1,39 @@
+.page-stack-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 8px 16px;
+  background-color: var(--bg-tertiary);
+  border-radius: 8px;
+  max-width: 300px;
+  width: 100%;
+}
+
+.page-stack-bar {
+  flex: 1;
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: var(--border-color);
+}
+
+.page-stack-bar-read {
+  background: linear-gradient(90deg, var(--accent-color), var(--accent-hover));
+  transition: width 0.3s ease;
+  border-radius: 4px 0 0 4px;
+}
+
+.page-stack-bar-remaining {
+  background-color: transparent;
+  transition: width 0.3s ease;
+}
+
+.page-stack-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 36px;
+  text-align: right;
+}

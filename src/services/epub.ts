@@ -1,6 +1,13 @@
 import ePub, { Book as EPubBook, Rendition, NavItem } from 'epubjs';
 import { v4 as uuidv4 } from 'uuid';
-import type { Book, Chapter } from '../types';
+import type { Book, Chapter, TypographySettings } from '../types';
+
+export interface RenderOptions {
+  width?: number;
+  height?: number;
+  spread?: 'none' | 'auto' | 'always';
+  flow?: 'paginated' | 'scrolled';
+}
 
 /**
  * EPUB Service - Wraps epub.js for book management
@@ -146,7 +153,11 @@ export class EPUBService {
   /**
    * Render EPUB to a container element
    */
-  async renderToElement(element: HTMLElement, width?: number, height?: number): Promise<void> {
+  async renderToElement(
+    element: HTMLElement,
+    widthOrOptions?: number | RenderOptions,
+    height?: number
+  ): Promise<void> {
     if (!this.book) {
       throw new Error('No book loaded');
     }
@@ -165,21 +176,31 @@ export class EPUBService {
       this.rendition = null;
     }
 
-    // Get actual dimensions (must be non-zero for pagination to work)
-    const containerWidth = width || element.clientWidth || 800;
-    const containerHeight = height || element.clientHeight || 600;
+    let containerWidth: number;
+    let containerHeight: number;
+    let spread: 'none' | 'auto' | 'always';
+    let flow: 'paginated' | 'scrolled';
 
-    // Clear the container first
+    if (typeof widthOrOptions === 'object') {
+      containerWidth = widthOrOptions.width || element.clientWidth || 800;
+      containerHeight = widthOrOptions.height || element.clientHeight || 600;
+      spread = widthOrOptions.spread ?? 'auto';
+      flow = widthOrOptions.flow ?? 'paginated';
+    } else {
+      containerWidth = widthOrOptions || element.clientWidth || 800;
+      containerHeight = height || element.clientHeight || 600;
+      spread = 'auto';
+      flow = 'paginated';
+    }
+
     element.innerHTML = '';
 
-    // Create rendition using default manager with paginated flow
-    // This uses CSS columns for proper page-by-page reading
     const rendition = this.book.renderTo(element, {
       width: containerWidth,
       height: containerHeight,
       manager: 'default',
-      flow: 'paginated',
-      spread: 'none',
+      flow,
+      spread,
     });
     this.rendition = rendition;
 
@@ -361,9 +382,54 @@ export class EPUBService {
     }
   }
 
-  /**
-   * Navigate to a chapter by href
-   */
+  applyTypography(settings: Partial<TypographySettings>): void {
+    if (!this.rendition) {
+      return;
+    }
+
+    if (settings.fontFamily) {
+      this.rendition.themes.override('font-family', settings.fontFamily);
+    }
+    if (settings.fontSize) {
+      this.rendition.themes.override('font-size', `${settings.fontSize}px`);
+    }
+    if (settings.lineHeight) {
+      this.rendition.themes.override('line-height', String(settings.lineHeight));
+    }
+    if (settings.backgroundColor) {
+      this.rendition.themes.override('background-color', settings.backgroundColor);
+    }
+  }
+
+  getProgress(): { currentPage: number; totalPages: number; percentage: number } {
+    if (!this.book || !this.rendition) {
+      return { currentPage: 0, totalPages: 0, percentage: 0 };
+    }
+
+    const location = this.rendition.currentLocation() as any;
+    if (!location || !location.start) {
+      return { currentPage: 0, totalPages: 0, percentage: 0 };
+    }
+
+    const percentage = location.start.percentage || 0;
+    const totalLocations = this.book.locations.length();
+    
+    if (totalLocations > 0) {
+      const currentPage = Math.floor(percentage * totalLocations) + 1;
+      return {
+        currentPage,
+        totalPages: totalLocations,
+        percentage,
+      };
+    }
+
+    return {
+      currentPage: 0,
+      totalPages: 0,
+      percentage,
+    };
+  }
+
   async goToChapter(href: string): Promise<void> {
     if (!this.rendition) {
       throw new Error('Rendition not initialized');
