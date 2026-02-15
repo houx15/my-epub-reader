@@ -73,12 +73,32 @@ export function HighlightPopover({
       }
     };
 
+    const handleIframeClick = () => {
+      onClose();
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
+
+    const iframes = document.querySelectorAll('iframe');
+    iframes.forEach((iframe) => {
+      try {
+        iframe.contentDocument?.addEventListener('mousedown', handleIframeClick);
+      } catch {
+        // Cross-origin iframe, can't access
+      }
+    });
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
+      iframes.forEach((iframe) => {
+        try {
+          iframe.contentDocument?.removeEventListener('mousedown', handleIframeClick);
+        } catch {
+          // Cross-origin iframe, can't access
+        }
+      });
     };
   }, [onClose]);
 

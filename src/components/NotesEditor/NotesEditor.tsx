@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -281,7 +281,7 @@ export function NotesEditor({
     if (viewMode === 'source' && monacoEditor && monaco) {
       const selection = monacoEditor.getSelection();
       const hasFocus = monacoEditor.hasTextFocus();
-      let range = selection || null;
+      let range: import('monaco-editor').Range | null = selection || null;
 
       if (!range || !hasFocus) {
         const model = monacoEditor.getModel();

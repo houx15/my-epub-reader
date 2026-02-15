@@ -4,7 +4,7 @@ import { useAppStore } from '../stores/appStore';
 import { getStorageService } from '../services/storage';
 import { getEPUBService } from '../services/epub';
 import type { Highlight, HighlightColor, Selection } from '../types';
-import type { Rendition, Contents } from 'epubjs';
+import type { Rendition } from 'epubjs';
 
 const HIGHLIGHT_STYLES: Record<HighlightColor, Record<string, string>> = {
   yellow: { 'fill': 'rgba(255, 235, 59, 0.35)', 'fill-opacity': '0.35', 'mix-blend-mode': 'multiply' },
@@ -46,11 +46,44 @@ export function useHighlights(): UseHighlightsReturn {
   const renditionRef = useRef<Rendition | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const highlightsRef = useRef<Highlight[]>(highlights);
-  const clickHandlerRef = useRef<((event: MouseEvent) => void) | null>(null);
+  const currentBookIdRef = useRef<string | null>(null);
+  const registeredClickHandlersRef = useRef<Map<string, (e: MouseEvent) => void>>(new Map());
+  const cleanupFunctionsRef = useRef<Array<() => void>>([]);
 
   useEffect(() => {
     highlightsRef.current = highlights;
-  }, [highlights]);
+
+    if (activeHighlight) {
+      const updatedHighlight = highlights.find((h) => h.id === activeHighlight.id);
+      if (updatedHighlight && JSON.stringify(updatedHighlight) !== JSON.stringify(activeHighlight)) {
+        setActiveHighlight(updatedHighlight);
+      }
+    }
+  }, [highlights, activeHighlight]);
+
+  useEffect(() => {
+    currentBookIdRef.current = currentBook?.id || null;
+  }, [currentBook?.id]);
+
+  const getIframeOffset = useCallback(() => {
+    const rendition = getEPUBService().getRendition();
+    if (!rendition) return { left: 0, top: 0 };
+
+    const contents = rendition.getContents();
+    if (!contents || (Array.isArray(contents) && contents.length === 0)) {
+      return { left: 0, top: 0 };
+    }
+
+    const content = Array.isArray(contents) ? contents[0] : contents;
+    const doc = content?.document;
+    if (!doc) return { left: 0, top: 0 };
+
+    const frameElement = doc.defaultView?.frameElement as HTMLElement | null;
+    if (!frameElement) return { left: 0, top: 0 };
+
+    const rect = frameElement.getBoundingClientRect();
+    return { left: rect.left, top: rect.top };
+  }, []);
 
   const debouncedSave = useCallback(async (bookId: string, highlightsToSave: Highlight[]) => {
     if (saveTimeoutRef.current) {
@@ -65,6 +98,31 @@ export function useHighlights(): UseHighlightsReturn {
       }
     }, 500);
   }, []);
+
+  const createHighlightClickCallback = useCallback(
+    (highlightId: string) => {
+      return (event: MouseEvent) => {
+        const target = event.target as HTMLElement;
+        const highlightElement = target.closest('.epub-highlight');
+        if (!highlightElement) return;
+
+        const highlight = highlightsRef.current.find((h) => h.id === highlightId);
+        if (!highlight) return;
+
+        const rect = highlightElement.getBoundingClientRect();
+        const iframeOffset = getIframeOffset();
+
+        const position = {
+          x: iframeOffset.left + rect.left + rect.width / 2,
+          y: iframeOffset.top + rect.top,
+        };
+
+        setActiveHighlight(highlight);
+        setActiveHighlightPosition(position);
+      };
+    },
+    [getIframeOffset]
+  );
 
   const createHighlight = useCallback(
     (selection: Selection, color: HighlightColor, annotation: string = ''): Highlight => {
@@ -90,10 +148,13 @@ export function useHighlights(): UseHighlightsReturn {
 
       const rendition = getEPUBService().getRendition();
       if (rendition) {
+        const clickHandler = createHighlightClickCallback(highlight.id);
+        registeredClickHandlersRef.current.set(highlight.id, clickHandler);
+
         rendition.annotations.highlight(
           highlight.cfi,
           { id: highlight.id } as HighlightClickData,
-          () => {},
+          clickHandler,
           'epub-highlight',
           HIGHLIGHT_STYLES[highlight.color]
         );
@@ -103,13 +164,16 @@ export function useHighlights(): UseHighlightsReturn {
 
       return highlight;
     },
-    [currentBook, addHighlight, debouncedSave]
+    [currentBook, addHighlight, debouncedSave, createHighlightClickCallback]
   );
 
-  const removeHighlightFromRendition = useCallback((cfi: string) => {
+  const removeHighlightFromRendition = useCallback((cfi: string, highlightId?: string) => {
     const rendition = getEPUBService().getRendition();
     if (rendition) {
       rendition.annotations.remove(cfi, 'highlight');
+    }
+    if (highlightId) {
+      registeredClickHandlersRef.current.delete(highlightId);
     }
   }, []);
 
@@ -121,14 +185,17 @@ export function useHighlights(): UseHighlightsReturn {
       storeUpdateHighlight(id, { ...updates, updatedAt: Date.now() });
 
       if (updates.color && updates.color !== highlight.color) {
-        removeHighlightFromRendition(highlight.cfi);
-        
+        removeHighlightFromRendition(highlight.cfi, highlight.id);
+
         const rendition = getEPUBService().getRendition();
         if (rendition) {
+          const clickHandler = createHighlightClickCallback(highlight.id);
+          registeredClickHandlersRef.current.set(highlight.id, clickHandler);
+
           rendition.annotations.highlight(
             highlight.cfi,
             { id: highlight.id } as HighlightClickData,
-            () => {},
+            clickHandler,
             'epub-highlight',
             HIGHLIGHT_STYLES[updates.color]
           );
@@ -140,7 +207,7 @@ export function useHighlights(): UseHighlightsReturn {
       );
       debouncedSave(currentBook.id, updatedHighlights);
     },
-    [currentBook, storeUpdateHighlight, removeHighlightFromRendition, debouncedSave]
+    [currentBook, storeUpdateHighlight, removeHighlightFromRendition, debouncedSave, createHighlightClickCallback]
   );
 
   const removeHighlight = useCallback(
@@ -148,7 +215,7 @@ export function useHighlights(): UseHighlightsReturn {
       const highlight = highlightsRef.current.find((h) => h.id === id);
       if (!highlight || !currentBook) return;
 
-      removeHighlightFromRendition(highlight.cfi);
+      removeHighlightFromRendition(highlight.cfi, highlight.id);
       storeRemoveHighlight(id);
 
       const updatedHighlights = highlightsRef.current.filter((h) => h.id !== id);
@@ -164,7 +231,7 @@ export function useHighlights(): UseHighlightsReturn {
     renditionRef.current = rendition;
 
     const bookHighlights = highlightsRef.current.filter((h) => h.bookId === currentBook.id);
-    
+
     bookHighlights.forEach((highlight) => {
       try {
         rendition.annotations.remove(highlight.cfi, 'highlight');
@@ -173,12 +240,17 @@ export function useHighlights(): UseHighlightsReturn {
       }
     });
 
+    registeredClickHandlersRef.current.clear();
+
     bookHighlights.forEach((highlight) => {
       try {
+        const clickHandler = createHighlightClickCallback(highlight.id);
+        registeredClickHandlersRef.current.set(highlight.id, clickHandler);
+
         rendition.annotations.highlight(
           highlight.cfi,
           { id: highlight.id } as HighlightClickData,
-          () => {},
+          clickHandler,
           'epub-highlight',
           HIGHLIGHT_STYLES[highlight.color]
         );
@@ -186,17 +258,30 @@ export function useHighlights(): UseHighlightsReturn {
         console.warn('Failed to render highlight:', highlight.id, error);
       }
     });
-  }, [currentBook]);
+  }, [currentBook, createHighlightClickCallback]);
 
   const loadHighlightsForBook = useCallback(async (bookId: string) => {
+    const bookIdAtLoadStart = bookId;
+
     try {
       const storage = await getStorageService();
       const loadedHighlights = await storage.loadHighlights(bookId);
+
+      if (currentBookIdRef.current !== bookIdAtLoadStart) {
+        return;
+      }
+
       useAppStore.getState().setHighlights(loadedHighlights);
+
+      setTimeout(() => {
+        if (currentBookIdRef.current === bookIdAtLoadStart) {
+          renderHighlights();
+        }
+      }, 0);
     } catch (error) {
       console.error('Failed to load highlights:', error);
     }
-  }, []);
+  }, [renderHighlights]);
 
   const onHighlightClick = useCallback((highlight: Highlight, position: { x: number; y: number }) => {
     setActiveHighlight(highlight);
@@ -211,69 +296,43 @@ export function useHighlights(): UseHighlightsReturn {
   useEffect(() => {
     let isCancelled = false;
     let retryId: number | null = null;
+    let renderedHandler: (() => void) | null = null;
 
-    const setupHighlightClickHandler = () => {
+    const setupHighlightSystem = () => {
       if (isCancelled) return;
 
       const rendition = getEPUBService().getRendition();
       if (!rendition) {
-        retryId = window.setTimeout(setupHighlightClickHandler, 100);
+        retryId = window.setTimeout(setupHighlightSystem, 100);
         return;
       }
 
       renditionRef.current = rendition;
 
-      const handleAnnotationClick = (event: MouseEvent) => {
-        const target = event.target as HTMLElement;
-        const highlightElement = target.closest('.epub-highlight');
-        if (highlightElement) {
-          const annotationData = (highlightElement as any).annotationData;
-          if (annotationData?.id) {
-            const highlight = highlightsRef.current.find((h) => h.id === annotationData.id);
-            if (highlight) {
-              const rect = highlightElement.getBoundingClientRect();
-              onHighlightClick(highlight, {
-                x: rect.left + rect.width / 2,
-                y: rect.top,
-              });
-            }
-          }
-        }
+      renderedHandler = () => {
+        renderHighlights();
       };
 
-      clickHandlerRef.current = handleAnnotationClick;
-      
-      const contents = rendition.getContents();
-      if (Array.isArray(contents)) {
-        contents.forEach((content: Contents) => {
-          content.document?.addEventListener('click', handleAnnotationClick);
-        });
-      } else if (contents) {
-        contents.document?.addEventListener('click', handleAnnotationClick);
-      }
-
-      rendition.on('rendered', () => {
-        renderHighlights();
-        const newContents = rendition.getContents();
-        if (Array.isArray(newContents)) {
-          newContents.forEach((content: Contents) => {
-            content.document?.addEventListener('click', handleAnnotationClick);
-          });
-        } else if (newContents) {
-          newContents.document?.addEventListener('click', handleAnnotationClick);
-        }
+      rendition.on('rendered', renderedHandler);
+      cleanupFunctionsRef.current.push(() => {
+        rendition.off('rendered', renderedHandler);
       });
     };
 
-    setupHighlightClickHandler();
+    setupHighlightSystem();
 
     return () => {
       isCancelled = true;
       if (retryId) {
         clearTimeout(retryId);
       }
+
+      cleanupFunctionsRef.current.forEach((cleanup) => cleanup());
+      cleanupFunctionsRef.current = [];
+
+      registeredClickHandlersRef.current.clear();
     };
-  }, [renderHighlights, onHighlightClick]);
+  }, [renderHighlights]);
 
   useEffect(() => {
     return () => {

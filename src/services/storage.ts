@@ -61,7 +61,7 @@ export class StorageService {
         return null;
       }
 
-      return await window.electron.readJSON(metaPath);
+      return await window.electron.readJSON<Book>(metaPath);
     } catch (error) {
       console.error('Failed to load book metadata:', error);
       return null;
@@ -123,7 +123,7 @@ export class StorageService {
         return [];
       }
 
-      const data = await window.electron.readJSON(chatPath);
+      const data = await window.electron.readJSON<{ sessions?: ChatSession[] }>(chatPath);
       return data.sessions || [];
     } catch (error) {
       console.error('Failed to load chat history:', error);
@@ -141,7 +141,7 @@ export class StorageService {
     try {
       const exists = await window.electron.fileExists(indexPath);
       if (exists) {
-        index = await window.electron.readJSON(indexPath);
+        index = await window.electron.readJSON<BooksIndex>(indexPath);
       } else {
         index = { books: [] };
       }
@@ -193,7 +193,7 @@ export class StorageService {
         return [];
       }
 
-      const data = await window.electron.readJSON(highlightsPath);
+      const data = await window.electron.readJSON<{ highlights?: Highlight[] }>(highlightsPath);
       return data.highlights || [];
     } catch (error) {
       console.error('Failed to load highlights:', error);
@@ -213,7 +213,7 @@ export class StorageService {
         return { books: [] };
       }
 
-      return await window.electron.readJSON(indexPath);
+      return await window.electron.readJSON<BooksIndex>(indexPath);
     } catch (error) {
       console.error('Failed to load books index:', error);
       return { books: [] };
