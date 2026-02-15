@@ -4,7 +4,7 @@ import { PageStack } from './PageStack';
 import './BookLayout.css';
 
 export interface BookLayoutProps {
-  bookId?: string;
+  bookId: string;
   onRenderReady: (element: HTMLElement, width: number, height: number) => void;
   chapters: Chapter[];
   currentChapter: Chapter | null;
@@ -90,7 +90,7 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
 
   // Use ResizeObserver to handle initial render and size changes
   // Guarded with isRenderReadyCalledRef to prevent re-initialization on callback identity changes
-  // Guard is reset when bookId changes (see effect above)
+  // Effect re-runs when bookId changes (guard is reset in the effect above)
   useEffect(() => {
     if (!bookSpreadRef.current || isRenderReadyCalledRef.current) return;
 
@@ -131,7 +131,7 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
         resizeObserver.disconnect();
       };
     }
-  }, [onRenderReady]);
+  }, [onRenderReady, bookId]);
 
   const getSpreadClassName = () => {
     const classes = ['book-spread'];
