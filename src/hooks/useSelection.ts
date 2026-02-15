@@ -353,8 +353,10 @@ export function useSelection(
   const handleRelocated = useCallback(() => {
     window.getSelection()?.removeAllRanges();
     const rendition = getEPUBService().getRendition();
-    forEachContent(rendition, (content: any) => {
-      content?.window?.getSelection()?.removeAllRanges();
+    const contents = rendition?.getContents() as unknown[] | undefined;
+    contents?.forEach((content) => {
+      const c = content as { window?: Window };
+      c?.window?.getSelection()?.removeAllRanges();
     });
     setSelection(null);
     setPopoverPosition(null);
@@ -364,8 +366,10 @@ export function useSelection(
   const clearSelection = useCallback(() => {
     window.getSelection()?.removeAllRanges();
     const rendition = getEPUBService().getRendition();
-    forEachContent(rendition, (content: any) => {
-      content?.window?.getSelection()?.removeAllRanges();
+    const contents = rendition?.getContents() as unknown[] | undefined;
+    contents?.forEach((content) => {
+      const c = content as { window?: Window };
+      c?.window?.getSelection()?.removeAllRanges();
     });
     setSelection(null);
     setPopoverPosition(null);

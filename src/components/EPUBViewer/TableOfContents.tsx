@@ -1,3 +1,4 @@
+// Table of Contents Component
 import './TableOfContents.css';
 import type { Chapter } from '../../types';
 

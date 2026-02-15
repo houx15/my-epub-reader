@@ -1,3 +1,4 @@
+// Toolbar component
 import './Toolbar.css';
 
 interface ToolbarProps {

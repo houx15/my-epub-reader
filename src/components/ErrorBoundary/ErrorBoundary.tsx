@@ -1,4 +1,4 @@
-import React, { Component, ReactNode } from 'react';
+import { Component, ReactNode } from 'react';
 import './ErrorBoundary.css';
 
 interface ErrorBoundaryProps {

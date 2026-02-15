@@ -12,7 +12,7 @@ import TaskItem from '@tiptap/extension-task-item';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { lowlight } from 'lowlight';
 import { marked } from 'marked';
-import TurndownService from 'turndown/lib/turndown.es.js';
+import TurndownService from 'turndown';
 import './NotesEditor.css';
 import type { Chapter } from '../../types';
 import { useAppStore } from '../../stores/appStore';
@@ -167,17 +167,14 @@ export function NotesEditor({
       handleClick: (_view, _pos, event) => {
         const target = event.target as HTMLElement | null;
         // Try to find location link - either by data-loc attribute or href starting with loc:
-        let anchor = target?.closest('[data-loc]') as HTMLAnchorElement | null;
+        let anchor: HTMLAnchorElement | null = target?.closest('[data-loc]') as HTMLAnchorElement | null;
         if (!anchor) {
           anchor = target?.closest('a[href^="loc:"]') as HTMLAnchorElement | null;
         }
-        if (!anchor) {
-          // Maybe clicked directly on the anchor
-          if (target?.tagName === 'A') {
-            const el = target as HTMLAnchorElement;
-            if (el.getAttribute('data-loc') || el.getAttribute('href')?.startsWith('loc:')) {
-              anchor = el;
-            }
+        if (!anchor && target?.tagName === 'A') {
+          const el = target as HTMLAnchorElement;
+          if (el.getAttribute('data-loc') || el.getAttribute('href')?.startsWith('loc:')) {
+            anchor = el;
           }
         }
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { TableOfContents } from './TableOfContents';
 import { SelectionPopover } from './SelectionPopover';
 import { HighlightPopover } from '../Highlights/HighlightPopover';
@@ -6,8 +6,13 @@ import { useSelection } from '../../hooks/useSelection';
 import { useHighlights } from '../../hooks/useHighlights';
 import { useAppStore } from '../../stores/appStore';
 import type { HighlightColor } from '../../types';
+import { BookLayout, BookLayoutRef } from '../BookLayout/BookLayout';
 import './EPUBViewer.css';
 import type { Chapter } from '../../types';
+
+export interface EPUBViewerRef {
+  triggerAnimation: (direction: 'forward' | 'backward') => void;
+}
 
 interface EPUBViewerProps {
   onRenderReady: (element: HTMLElement, width: number, height: number) => void;
@@ -16,26 +21,37 @@ interface EPUBViewerProps {
   onChapterSelect: (href: string) => void;
   onNextPage: () => void;
   onPrevPage: () => void;
+  progress: number; // Real reading progress (0-1) from EPUB service
 }
 
-export function EPUBViewer({
-  onRenderReady,
-  chapters,
-  currentChapter,
-  onChapterSelect,
-  onNextPage,
-  onPrevPage,
-}: EPUBViewerProps) {
-  const viewerRef = useRef<HTMLDivElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const isInitializingRef = useRef(false);
+export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EPUBViewer(
+  {
+    onRenderReady,
+    chapters,
+    currentChapter,
+    onChapterSelect,
+    onNextPage,
+    onPrevPage,
+    progress,
+  },
+  ref
+) {
+  const bookLayoutRef = useRef<BookLayoutRef>(null);
   const [isTOCOpen, setIsTOCOpen] = useState(false);
-  const [isRendered, setIsRendered] = useState(false);
-  const [bookId, setBookId] = useState<string | null>(null);
-
   const { requestNoteInsert, isLLMPanelCollapsed, toggleLLMPanel, currentBook, setCurrentSelection } = useAppStore();
+  // Track the last book load time to force remount when same file is reopened
+  // This ensures BookLayout re-initializes properly on same-file reload
+  const [loadTimestamp, setLoadTimestamp] = useState(0);
+  
+  // Increment timestamp whenever currentBook reference changes (including same-file reload)
+  useEffect(() => {
+    if (currentBook?.id) {
+      setLoadTimestamp(Date.now());
+    }
+  }, [currentBook]);
+
   const { selection, popoverPosition, clearSelection, dismissPopover, highlightPopoverData } = useSelection(
-    viewerRef,
+    { current: null } as React.RefObject<HTMLElement>, // BookLayout handles its own ref
     currentChapter,
     chapters
   );
@@ -107,6 +123,12 @@ export function EPUBViewer({
       renderHighlights();
     }
   }, [isRendered, currentBook?.id, renderHighlights]);
+  // Expose animation trigger to parent
+  useImperativeHandle(ref, () => ({
+    triggerAnimation: (direction: 'forward' | 'backward') => {
+      bookLayoutRef.current?.triggerAnimation(direction);
+    },
+  }), []);
 
   const toggleTOC = () => {
     setIsTOCOpen(!isTOCOpen);
@@ -188,6 +210,21 @@ export function EPUBViewer({
           Next →
         </button>
       </div>
+      {/* EPUB content container - now using BookLayout */}
+      {currentBook && (
+        <BookLayout
+          key={`${currentBook.id}-${loadTimestamp}`}
+          ref={bookLayoutRef}
+          bookId={`${currentBook.id}-${loadTimestamp}`}
+          onRenderReady={onRenderReady}
+          chapters={chapters}
+          currentChapter={currentChapter}
+          onChapterSelect={handleChapterSelect}
+          onNextPage={onNextPage}
+          onPrevPage={onPrevPage}
+          progress={progress}
+        />
+      )}
 
       {selection && popoverPosition && (
         <SelectionPopover
@@ -226,4 +263,4 @@ export function EPUBViewer({
       )}
     </div>
   );
-}
+});

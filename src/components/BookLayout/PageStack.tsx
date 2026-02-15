@@ -5,7 +5,9 @@ export interface PageStackProps {
 }
 
 export function PageStack({ progress }: PageStackProps) {
-  const percentage = Math.round(progress * 100);
+  // Clamp progress to valid range [0, 1] to prevent invalid CSS values
+  const clampedProgress = Math.max(0, Math.min(1, progress));
+  const percentage = Math.round(clampedProgress * 100);
 
   return (
     <div className="page-stack-indicator">

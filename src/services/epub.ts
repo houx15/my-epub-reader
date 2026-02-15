@@ -1,4 +1,4 @@
-import ePub, { Book as EPubBook, Rendition, NavItem } from 'epubjs';
+import ePub, { Book as EPubBook, Rendition, NavItem, Contents } from 'epubjs';
 import { v4 as uuidv4 } from 'uuid';
 import type { Book, Chapter, TypographySettings } from '../types';
 
@@ -8,6 +8,14 @@ export interface RenderOptions {
   spread?: 'none' | 'auto' | 'always';
   flow?: 'paginated' | 'scrolled';
 }
+
+interface AnimationCallbacks {
+  beforeNextPage?: () => void;
+  beforePrevPage?: () => void;
+}
+
+// Static callbacks that persist across service resets
+let globalAnimationCallbacks: AnimationCallbacks | null = null;
 
 /**
  * EPUB Service - Wraps epub.js for book management
@@ -342,11 +350,15 @@ export class EPUBService {
 
         if (event.key === 'ArrowRight') {
           event.preventDefault();
+          // Trigger animation callback before navigating
+          globalAnimationCallbacks?.beforeNextPage?.();
           this.nextPage();
         }
 
         if (event.key === 'ArrowLeft') {
           event.preventDefault();
+          // Trigger animation callback before navigating
+          globalAnimationCallbacks?.beforePrevPage?.();
           this.prevPage();
         }
       };
@@ -365,11 +377,12 @@ export class EPUBService {
       return;
     }
 
-    this.rendition.on('relocated', (location: any) => {
-      if (location && location.start) {
+    this.rendition.on('relocated', (location: unknown) => {
+      const loc = location as { start?: { cfi: string; percentage?: number } };
+      if (loc && loc.start) {
         callback({
-          cfi: location.start.cfi,
-          percentage: location.start.percentage || 0,
+          cfi: loc.start.cfi,
+          percentage: loc.start.percentage || 0,
         });
       }
     });
@@ -382,6 +395,15 @@ export class EPUBService {
     if (this.rendition) {
       this.rendition.themes.select(theme);
     }
+  }
+
+  /**
+   * Set animation callbacks for page navigation
+   * Called before page turns to trigger visual animations
+   * Stored globally to persist across service resets
+   */
+  setAnimationCallbacks(callbacks: AnimationCallbacks | null): void {
+    globalAnimationCallbacks = callbacks;
   }
 
   applyTypography(settings: Partial<TypographySettings>): void {
@@ -403,12 +425,21 @@ export class EPUBService {
     }
   }
 
+  /**
+   * Set font size for the EPUB content
+   */
+  setFontSize(size: number): void {
+    if (this.rendition) {
+      this.rendition.themes.override('font-size', `${size}px`);
+    }
+  }
+
   getProgress(): { currentPage: number; totalPages: number; percentage: number } {
     if (!this.book || !this.rendition) {
       return { currentPage: 0, totalPages: 0, percentage: 0 };
     }
 
-    const location = this.rendition.currentLocation() as any;
+    const location = this.rendition.currentLocation() as { start?: { cfi: string; percentage?: number; index?: number } };
     if (!location || !location.start) {
       return { currentPage: 0, totalPages: 0, percentage: 0 };
     }
@@ -417,7 +448,9 @@ export class EPUBService {
     const totalLocations = this.book.locations.length();
     
     if (totalLocations > 0) {
-      const currentPage = Math.floor(percentage * totalLocations) + 1;
+      // Clamp currentPage to valid range [1, totalLocations]
+      // At percentage === 1, we want currentPage === totalLocations (not totalLocations + 1)
+      const currentPage = Math.min(Math.floor(percentage * totalLocations) + 1, totalLocations);
       return {
         currentPage,
         totalPages: totalLocations,
@@ -472,9 +505,9 @@ export class EPUBService {
       // Clear any text selection before navigating
       window.getSelection()?.removeAllRanges();
 
-      const beforeLoc = this.rendition.currentLocation() as any;
+      const beforeLoc = this.rendition.currentLocation() as { start?: { cfi: string; index?: number } };
       await this.rendition.next();
-      const afterLoc = this.rendition.currentLocation() as any;
+      const afterLoc = this.rendition.currentLocation() as { start?: { cfi: string; index?: number } };
 
       if (beforeLoc?.start?.cfi === afterLoc?.start?.cfi && this.book) {
         const nextIndex = (beforeLoc?.start?.index ?? -1) + 1;
@@ -512,9 +545,9 @@ export class EPUBService {
       // Clear any text selection before navigating
       window.getSelection()?.removeAllRanges();
 
-      const beforeLoc = this.rendition.currentLocation() as any;
+      const beforeLoc = this.rendition.currentLocation() as { start?: { cfi: string; index?: number } };
       await this.rendition.prev();
-      const afterLoc = this.rendition.currentLocation() as any;
+      const afterLoc = this.rendition.currentLocation() as { start?: { cfi: string; index?: number } };
 
       if (beforeLoc?.start?.cfi === afterLoc?.start?.cfi && this.book) {
         const prevIndex = (beforeLoc?.start?.index ?? 0) - 1;
@@ -540,7 +573,7 @@ export class EPUBService {
       return null;
     }
 
-    const location = this.rendition.currentLocation() as any;
+    const location = this.rendition.currentLocation() as { start?: { cfi: string; percentage?: number; href?: string } };
     if (!location || !location.start) {
       return null;
     }

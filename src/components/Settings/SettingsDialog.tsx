@@ -113,14 +113,8 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
 
     setConfig(updatedConfig);
 
-    // Save to config.json
-    try {
-      await window.electron.saveConfig(updatedConfig);
-      onClose();
-    } catch (error) {
-      console.error('Failed to save config:', error);
-      alert('Failed to save settings. Please try again.');
-    }
+    // Config is auto-saved by the store
+    onClose();
   };
 
   const joinPath = (...parts: string[]) =>
@@ -159,10 +153,12 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         return;
       }
 
-      const result = await window.electron.moveNotesStorage(fromPath, toPath);
-      if (!result.success) {
-        setMoveResult({ success: false, message: result.message || 'Failed to move notes.' });
-        return;
+      if (window.electron.moveNotesStorage) {
+        const result = await window.electron.moveNotesStorage(fromPath, toPath);
+        if (!result.success) {
+          setMoveResult({ success: false, message: result.message || 'Failed to move notes.' });
+          return;
+        }
       }
 
       const updatedConfig = {
@@ -173,7 +169,9 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
       };
 
       setConfig(updatedConfig);
-      await window.electron.saveConfig(updatedConfig);
+      if (window.electron.saveConfig) {
+        await window.electron.saveConfig(updatedConfig);
+      }
       setMoveResult({ success: true, message: 'Notes moved successfully.' });
     } catch (error: any) {
       setMoveResult({ success: false, message: error?.message || 'Failed to move notes.' });
@@ -202,9 +200,11 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         <button
           className="btn-secondary"
           onClick={async () => {
-            const result = await window.electron.openDirectoryDialog();
-            if (!result.canceled && result.filePaths[0]) {
-              setNotesPath(result.filePaths[0]);
+            if (window.electron.openDirectoryDialog) {
+              const result = await window.electron.openDirectoryDialog();
+              if (!result.canceled && result.filePath) {
+                setNotesPath(result.filePath);
+              }
             }
           }}
         >

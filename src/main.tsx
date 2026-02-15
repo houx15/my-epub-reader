@@ -1,5 +1,5 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { StrictMode } from 'react';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import './styles/globals.css';
@@ -43,9 +43,9 @@ initializeApp();
 
 // Render React app
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <StrictMode>
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
-  </React.StrictMode>
+  </StrictMode>
 );

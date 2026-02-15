@@ -1,3 +1,4 @@
+// LoadingSpinner component
 import './LoadingSpinner.css';
 
 interface LoadingSpinnerProps {

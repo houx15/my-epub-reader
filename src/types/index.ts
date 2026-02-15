@@ -85,7 +85,7 @@ export interface GeminiGenerationConfig {
   maxOutputTokens?: number;
   stopSequences?: string[];
   responseMimeType?: string;
-  responseSchema?: Record<string, any>;
+  responseSchema?: Record<string, unknown>;
   thinkingConfig?: {
     includeThoughts?: boolean;
   };
@@ -110,8 +110,8 @@ export interface GeminiResponse {
       role: string;
     };
     finishReason: string;
-    safetyRatings?: any[];
-    citationMetadata?: any;
+    safetyRatings?: unknown[];
+    citationMetadata?: unknown;
   }>;
   usageMetadata?: {
     promptTokenCount: number;
@@ -176,3 +176,32 @@ export interface OrganizeNotesOptions {
   bookTitle: string;
   noteContent: string;
 }
+
+// Electron API types
+declare global {
+  interface Window {
+    electron: {
+      openFileDialog: () => Promise<{ canceled: boolean; filePath?: string }>;
+      openDirectoryDialog: () => Promise<{ canceled: boolean; filePath?: string }>;
+      showSaveDialog: (options: { 
+        defaultPath: string; 
+        filters: Array<{ name: string; extensions: string[] }> 
+      }) => Promise<{ canceled: boolean; filePath?: string }>;
+      readFile: (filePath: string) => Promise<ArrayBuffer>;
+      writeFile: (filePath: string, content: string) => Promise<void>;
+      ensureDir: (dirPath: string) => Promise<void>;
+      pathJoin: (...paths: string[]) => Promise<string>;
+      pathDirname: (filePath: string) => Promise<string>;
+      pathBasename: (filePath: string, ext?: string) => Promise<string>;
+      getUserDataPath: () => Promise<string>;
+      loadConfig: () => Promise<AppConfig>;
+      saveConfig: (config: unknown) => Promise<void>;
+      fileExists: (filePath: string) => Promise<boolean>;
+      writeJSON: (filePath: string, data: unknown) => Promise<void>;
+      readJSON: (filePath: string) => Promise<unknown>;
+      moveNotesStorage?: (fromPath: string, toPath: string) => Promise<{ success: boolean; message?: string }>;
+    };
+  }
+}
+
+export {};

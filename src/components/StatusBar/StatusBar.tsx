@@ -1,3 +1,4 @@
+// StatusBar component
 import type { Chapter } from '../../types';
 import './StatusBar.css';
 

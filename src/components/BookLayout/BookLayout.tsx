@@ -1,9 +1,10 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import type { Chapter } from '../../types';
 import { PageStack } from './PageStack';
 import './BookLayout.css';
 
 export interface BookLayoutProps {
+  bookId: string;
   onRenderReady: (element: HTMLElement, width: number, height: number) => void;
   chapters: Chapter[];
   currentChapter: Chapter | null;
@@ -13,38 +14,65 @@ export interface BookLayoutProps {
   progress: number;
 }
 
-export function BookLayout({
-  onRenderReady,
-  onNextPage,
-  onPrevPage,
-  progress,
-}: BookLayoutProps) {
+export interface BookLayoutRef {
+  triggerAnimation: (direction: 'forward' | 'backward') => void;
+}
+
+export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function BookLayout(
+  {
+    bookId,
+    onRenderReady,
+    onNextPage,
+    onPrevPage,
+    progress,
+  },
+  ref
+) {
   const bookSpreadRef = useRef<HTMLDivElement>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward' | null>(null);
+  const isAnimatingRef = useRef(false);
+  const isRenderReadyCalledRef = useRef(false);
+  const lastBookIdRef = useRef<string | undefined>(undefined);
+
+  // Clamp progress to valid range [0, 1]
+  const clampedProgress = Math.max(0, Math.min(1, progress));
+
+  // Reset render guard when bookId changes
+  useEffect(() => {
+    if (bookId !== lastBookIdRef.current) {
+      isRenderReadyCalledRef.current = false;
+      lastBookIdRef.current = bookId;
+    }
+  }, [bookId]);
 
   const triggerPageTurnAnimation = useCallback((direction: 'forward' | 'backward') => {
-    if (isAnimating || !bookSpreadRef.current) return;
+    if (isAnimatingRef.current || !bookSpreadRef.current) return;
 
+    isAnimatingRef.current = true;
     setAnimationDirection(direction);
-    setIsAnimating(true);
 
     const handleAnimationEnd = () => {
       setAnimationDirection(null);
-      setIsAnimating(false);
+      isAnimatingRef.current = false;
     };
 
     bookSpreadRef.current.addEventListener('animationend', handleAnimationEnd, { once: true });
 
+    // Fallback: reset animation state after timeout in case animationend doesn't fire
     setTimeout(() => {
-      if (isAnimating) {
+      if (isAnimatingRef.current) {
         handleAnimationEnd();
       }
     }, 450);
-  }, [isAnimating]);
+  }, []);
+
+  // Expose animation trigger to parent for keyboard navigation
+  useImperativeHandle(ref, () => ({
+    triggerAnimation: triggerPageTurnAnimation,
+  }), [triggerPageTurnAnimation]);
 
   const handleSpreadClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (!bookSpreadRef.current || isAnimating) return;
+    if (!bookSpreadRef.current || isAnimatingRef.current) return;
 
     const rect = bookSpreadRef.current.getBoundingClientRect();
     const clickX = event.clientX - rect.left;
@@ -58,36 +86,52 @@ export function BookLayout({
       triggerPageTurnAnimation('forward');
       onNextPage();
     }
-  }, [isAnimating, onPrevPage, onNextPage, triggerPageTurnAnimation]);
+  }, [onPrevPage, onNextPage, triggerPageTurnAnimation]);
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (isAnimating) return;
-
-    if (event.key === 'ArrowRight') {
-      triggerPageTurnAnimation('forward');
-      onNextPage();
-    } else if (event.key === 'ArrowLeft') {
-      triggerPageTurnAnimation('backward');
-      onPrevPage();
-    }
-  }, [isAnimating, onNextPage, onPrevPage, triggerPageTurnAnimation]);
-
+  // Use ResizeObserver to handle initial render and size changes
+  // Guarded with isRenderReadyCalledRef to prevent re-initialization on callback identity changes
+  // Effect re-runs when bookId changes (guard is reset in the effect above)
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
-
-  useEffect(() => {
-    if (!bookSpreadRef.current) return;
+    if (!bookSpreadRef.current || isRenderReadyCalledRef.current) return;
 
     const spreadElement = bookSpreadRef.current;
-    const width = spreadElement.clientWidth;
-    const height = spreadElement.clientHeight;
 
-    if (width > 0 && height > 0) {
-      onRenderReady(spreadElement, width, height);
+    const tryRenderReady = () => {
+      const width = spreadElement.clientWidth;
+      const height = spreadElement.clientHeight;
+
+      if (width > 0 && height > 0) {
+        onRenderReady(spreadElement, width, height);
+        isRenderReadyCalledRef.current = true;
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediate render
+    if (!tryRenderReady()) {
+      // If size not ready, set up ResizeObserver to wait for it
+      const resizeObserver = new ResizeObserver((entries) => {
+        if (isRenderReadyCalledRef.current) return;
+        
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            onRenderReady(spreadElement, width, height);
+            isRenderReadyCalledRef.current = true;
+            resizeObserver.disconnect();
+            break;
+          }
+        }
+      });
+
+      resizeObserver.observe(spreadElement);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
     }
-  }, [onRenderReady]);
+  }, [onRenderReady, bookId]);
 
   const getSpreadClassName = () => {
     const classes = ['book-spread'];
@@ -104,7 +148,7 @@ export function BookLayout({
       <div className="book-container">
         <div
           className="page-stack page-stack-left"
-          style={{ width: `calc(3px + ${progress} * 12px)` }}
+          style={{ width: `calc(3px + ${clampedProgress} * 12px)` }}
         />
         <div className="book-spread-wrapper">
           <div className="book-page book-page-left" />
@@ -118,10 +162,10 @@ export function BookLayout({
         </div>
         <div
           className="page-stack page-stack-right"
-          style={{ width: `calc(3px + ${(1 - progress)} * 12px)` }}
+          style={{ width: `calc(3px + ${(1 - clampedProgress)} * 12px)` }}
         />
       </div>
-      <PageStack progress={progress} />
+      <PageStack progress={clampedProgress} />
     </div>
   );
-}
+});
