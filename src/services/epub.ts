@@ -422,14 +422,39 @@ export class EPUBService {
     }
     if (settings.backgroundColor) {
       this.rendition.themes.override('background-color', settings.backgroundColor);
-      // Adjust text color based on background brightness for readability
       const isDarkBg = settings.backgroundColor === '#1e1e1e';
-      if (isDarkBg) {
-        this.rendition.themes.override('color', '#e0e0e0');
-      } else {
-        this.rendition.themes.override('color', '#333333');
-      }
+      const textColor = isDarkBg ? '#e0e0e0' : '#333333';
+      this.rendition.themes.override('color', textColor);
+      this.injectTextColorStyles(textColor);
     }
+  }
+
+  private injectTextColorStyles(textColor: string): void {
+    if (!this.rendition) return;
+
+    const contents = this.rendition.getContents();
+    const contentsArray = Array.isArray(contents) ? contents : contents ? [contents] : [];
+
+    contentsArray.forEach((content: any) => {
+      const doc = content?.document;
+      if (!doc) return;
+
+      let styleEl = doc.getElementById('typography-override-styles');
+      if (!styleEl) {
+        styleEl = doc.createElement('style');
+        styleEl.id = 'typography-override-styles';
+        doc.head.appendChild(styleEl);
+      }
+
+      styleEl.textContent = `
+        p, div, span, h1, h2, h3, h4, h5, h6, li, td, th {
+          color: ${textColor} !important;
+        }
+        a {
+          color: ${textColor} !important;
+        }
+      `;
+    });
   }
 
   /**
