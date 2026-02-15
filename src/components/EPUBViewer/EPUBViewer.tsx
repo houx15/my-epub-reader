@@ -34,7 +34,7 @@ export function EPUBViewer({
   const [bookId, setBookId] = useState<string | null>(null);
 
   const { requestNoteInsert, isLLMPanelCollapsed, toggleLLMPanel, currentBook, setCurrentSelection } = useAppStore();
-  const { selection, popoverPosition, clearSelection, dismissPopover } = useSelection(
+  const { selection, popoverPosition, clearSelection, dismissPopover, highlightPopoverData } = useSelection(
     viewerRef,
     currentChapter,
     chapters
@@ -210,6 +210,18 @@ export function EPUBViewer({
           onDelete={removeHighlight}
           onAskAI={handleAskAI}
           onClose={clearActiveHighlight}
+        />
+      )}
+
+      {highlightPopoverData && !activeHighlight && (
+        <HighlightPopover
+          highlight={highlightPopoverData.highlight}
+          position={highlightPopoverData.position}
+          onUpdateAnnotation={(id, annotation) => updateHighlight(id, { annotation })}
+          onChangeColor={(id, color) => updateHighlight(id, { color })}
+          onDelete={removeHighlight}
+          onAskAI={handleAskAI}
+          onClose={clearSelection}
         />
       )}
     </div>

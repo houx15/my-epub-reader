@@ -1,14 +1,30 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getEPUBService } from '../services/epub';
 import { useAppStore } from '../stores/appStore';
-import type { Selection, Chapter } from '../types';
+import type { Selection, Chapter, Highlight } from '../types';
 import type { Rendition } from 'epubjs';
+
+interface HighlightPopoverData {
+  highlight: Highlight;
+  position: { x: number; y: number };
+}
 
 interface UseSelectionReturn {
   selection: Selection | null;
   popoverPosition: { x: number; y: number } | null;
   clearSelection: () => void;
   dismissPopover: () => void;
+  highlightPopoverData: HighlightPopoverData | null;
+}
+
+function forEachContent(rendition: Rendition | null, callback: (content: any) => void): void {
+  if (!rendition) return;
+  const contents = rendition.getContents();
+  if (Array.isArray(contents)) {
+    contents.forEach(callback);
+  } else if (contents) {
+    callback(contents);
+  }
 }
 
 /**
@@ -21,13 +37,11 @@ export function useSelection(
 ): UseSelectionReturn {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | null>(null);
-  const { setCurrentSelection } = useAppStore();
+  const [highlightPopoverData, setHighlightPopoverData] = useState<HighlightPopoverData | null>(null);
+  const { setCurrentSelection, highlights } = useAppStore();
   const selectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
 
-  /**
-   * Handle selection inside EPUB iframe
-   */
   const findChapterByHref = useCallback((items: Chapter[], href: string): Chapter | null => {
     const normalizedHref = href.split('#')[0];
     for (const item of items) {
@@ -41,6 +55,39 @@ export function useSelection(
       }
     }
     return null;
+  }, []);
+
+  const checkForOverlappingHighlight = useCallback(
+    (cfiRange: string): Highlight | null => {
+      if (!highlights || highlights.length === 0) return null;
+
+      for (const highlight of highlights) {
+        if (cfiRange === highlight.cfi) {
+          return highlight;
+        }
+      }
+
+      return null;
+    },
+    [highlights]
+  );
+
+  const getIframeOffset = useCallback(() => {
+    const rendition = getEPUBService().getRendition();
+    if (!rendition) return { left: 0, top: 0 };
+
+    let offset = { left: 0, top: 0 };
+    forEachContent(rendition, (content: any) => {
+      const doc = content?.document;
+      if (doc) {
+        const frameElement = doc.defaultView?.frameElement as HTMLElement | null;
+        if (frameElement) {
+          const rect = frameElement.getBoundingClientRect();
+          offset = { left: rect.left, top: rect.top };
+        }
+      }
+    });
+    return offset;
   }, []);
 
   const handleSelected = useCallback(
@@ -61,7 +108,26 @@ export function useSelection(
         if (!windowSelection || windowSelection.isCollapsed || !windowSelection.toString().trim()) {
           setSelection(null);
           setPopoverPosition(null);
+          setHighlightPopoverData(null);
           setCurrentSelection(null);
+          return;
+        }
+
+        const overlappingHighlight = checkForOverlappingHighlight(cfiRange);
+        if (overlappingHighlight) {
+          const range = windowSelection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          const iframeOffset = getIframeOffset();
+
+          setHighlightPopoverData({
+            highlight: overlappingHighlight,
+            position: {
+              x: iframeOffset.left + rect.left + rect.width / 2,
+              y: iframeOffset.top + rect.top,
+            },
+          });
+          setSelection(null);
+          setPopoverPosition(null);
           return;
         }
 
@@ -91,66 +157,54 @@ export function useSelection(
           timestamp: Date.now(),
         };
 
-      setSelection(newSelection);
-      setPopoverPosition({ x: popoverX, y: popoverY });
+        setSelection(newSelection);
+        setPopoverPosition({ x: popoverX, y: popoverY });
+        setHighlightPopoverData(null);
       }, 50);
     },
-    [chapters, currentChapter, findChapterByHref, setCurrentSelection]
+    [chapters, currentChapter, findChapterByHref, setCurrentSelection, checkForOverlappingHighlight, getIframeOffset]
   );
 
-  /**
-   * Handle click outside to clear selection
-   */
   const handleClickOutside = useCallback((event: MouseEvent) => {
     const target = event.target as HTMLElement;
 
-    // Don't clear if clicking on popover
-    if (target.closest('.selection-popover')) {
+    if (target.closest('.selection-popover') || target.closest('.highlight-popover')) {
       return;
     }
 
-    // Hide popover but keep selection for LLM context
     setSelection(null);
     setPopoverPosition(null);
+    setHighlightPopoverData(null);
   }, []);
 
-  /**
-   * Clear selection state on page change
-   */
   const handleRelocated = useCallback(() => {
     window.getSelection()?.removeAllRanges();
     const rendition = getEPUBService().getRendition();
-    rendition?.getContents().forEach((content) => {
+    forEachContent(rendition, (content: any) => {
       content?.window?.getSelection()?.removeAllRanges();
     });
     setSelection(null);
     setPopoverPosition(null);
+    setHighlightPopoverData(null);
   }, [setCurrentSelection]);
 
-  /**
-   * Programmatically clear selection
-   */
   const clearSelection = useCallback(() => {
     window.getSelection()?.removeAllRanges();
     const rendition = getEPUBService().getRendition();
-    rendition?.getContents().forEach((content) => {
+    forEachContent(rendition, (content: any) => {
       content?.window?.getSelection()?.removeAllRanges();
     });
     setSelection(null);
     setPopoverPosition(null);
+    setHighlightPopoverData(null);
   }, [setCurrentSelection]);
 
-  /**
-   * Hide popover but keep current selection in store (for LLM usage)
-   */
   const dismissPopover = useCallback(() => {
     setSelection(null);
     setPopoverPosition(null);
+    setHighlightPopoverData(null);
   }, []);
 
-  /**
-   * Attach event listeners
-   */
   useEffect(() => {
     let isCancelled = false;
     let retryId: number | null = null;
@@ -196,5 +250,6 @@ export function useSelection(
     popoverPosition,
     clearSelection,
     dismissPopover,
+    highlightPopoverData,
   };
 }
