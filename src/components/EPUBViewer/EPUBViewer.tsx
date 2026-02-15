@@ -38,7 +38,7 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
 ) {
   const bookLayoutRef = useRef<BookLayoutRef>(null);
   const [isTOCOpen, setIsTOCOpen] = useState(false);
-  const { currentBook, setPanelMode, setCurrentSelection } = useAppStore();
+  const { currentBook, setPanelMode, setCurrentSelection, noteContent, setNoteContent } = useAppStore();
   const [loadTimestamp, setLoadTimestamp] = useState(0);
   
   useEffect(() => {
@@ -82,6 +82,11 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
   const handleChapterSelect = (href: string) => {
     onChapterSelect(href);
     setIsTOCOpen(false);
+  };
+
+  const handleQuoteToNotes = (formattedQuote: string) => {
+    setNoteContent(noteContent + '\n\n' + formattedQuote + '\n\n');
+    clearSelection();
   };
 
   const handleDiscussWithAI = () => {
@@ -164,7 +169,7 @@ export const EPUBViewer = forwardRef<EPUBViewerRef, EPUBViewerProps>(function EP
         <SelectionPopover
           selection={selection}
           position={popoverPosition}
-          onQuoteToNotes={() => {}}
+          onQuoteToNotes={handleQuoteToNotes}
           onDiscussWithAI={handleDiscussWithAI}
           onHighlight={handleHighlight}
           onClose={clearSelection}

@@ -16,6 +16,11 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
     const handleKeyDown = (event: KeyboardEvent) => {
       const isMod = event.metaKey || event.ctrlKey;
 
+      if (event.key === 'Escape') {
+        handlers.onEscape?.();
+        return;
+      }
+
       const target = event.target as HTMLElement;
       if (
         target.tagName === 'INPUT' ||
@@ -52,10 +57,6 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
             handlers.onOpenSettings?.();
             break;
         }
-      }
-
-      if (event.key === 'Escape') {
-        handlers.onEscape?.();
       }
 
       if (!isMod) {

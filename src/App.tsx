@@ -3,6 +3,7 @@ import { Toolbar } from './components/Toolbar/Toolbar';
 import { BookLayout, BookLayoutRef } from './components/BookLayout';
 import { Notebook } from './components/Notebook/Notebook';
 import { AIOverlay } from './components/AIOverlay/AIOverlay';
+import { SelectionPopover } from './components/EPUBViewer/SelectionPopover';
 import { HighlightPopover } from './components/Highlights/HighlightPopover';
 import { SettingsDialog } from './components/Settings/SettingsDialog';
 import { StatusBar } from './components/StatusBar/StatusBar';
@@ -11,6 +12,7 @@ import { useEPUB } from './hooks/useEPUB';
 import { useNotes } from './hooks/useNotes';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useHighlights } from './hooks/useHighlights';
+import { useSelection } from './hooks/useSelection';
 import { useAppStore } from './stores/appStore';
 import { getEPUBService } from './services/epub';
 import { insertSummaryAfterSelection } from './services/noteUtils';
@@ -37,10 +39,12 @@ function App() {
     typography,
     setTypography,
     currentSelection,
+    setCurrentSelection,
   } = useAppStore();
 
   const {
     highlights,
+    createHighlight,
     updateHighlight,
     removeHighlight,
     loadHighlightsForBook,
@@ -55,6 +59,14 @@ function App() {
     loadNotes,
     saveNotes,
   } = useNotes();
+
+  const {
+    selection,
+    popoverPosition,
+    clearSelection,
+    dismissPopover,
+    highlightPopoverData,
+  } = useSelection({ current: null } as React.RefObject<HTMLElement>, currentChapter, chapters);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aiContext, setAiContext] = useState<{ text: string; cfi: string; chapterTitle: string } | null>(null);
@@ -157,10 +169,17 @@ function App() {
         cfi: highlight.cfi,
         chapterTitle: highlight.chapterTitle,
       });
+      setCurrentSelection({
+        text: highlight.text,
+        chapterId: highlight.chapterId,
+        chapterTitle: highlight.chapterTitle,
+        cfi: highlight.cfi,
+        timestamp: Date.now(),
+      });
       clearActiveHighlight();
       setPanelMode('ai');
     },
-    [setPanelMode, clearActiveHighlight]
+    [setPanelMode, clearActiveHighlight, setCurrentSelection]
   );
 
   const handleNextPage = useCallback(async () => {
@@ -183,7 +202,27 @@ function App() {
 
   const handleEscape = useCallback(() => {
     setPanelMode('reading');
-  }, [setPanelMode]);
+    clearSelection();
+    clearActiveHighlight();
+  }, [setPanelMode, clearSelection, clearActiveHighlight]);
+
+  const handleHighlight = useCallback(
+    (color: HighlightColor) => {
+      if (selection) {
+        createHighlight(selection, color);
+        clearSelection();
+      }
+    },
+    [selection, createHighlight, clearSelection]
+  );
+
+  const handleDiscussWithAI = useCallback(() => {
+    if (selection) {
+      setCurrentSelection(selection);
+    }
+    clearSelection();
+    setPanelMode('ai');
+  }, [selection, setCurrentSelection, clearSelection, setPanelMode]);
 
   useKeyboardShortcuts({
     onOpenFile: handleOpenFile,
@@ -269,6 +308,21 @@ function App() {
             onInsertToNotes={handleInsertSummary}
           />
 
+          {selection && popoverPosition && (
+            <SelectionPopover
+              selection={selection}
+              position={popoverPosition}
+              onQuoteToNotes={() => {
+                setNoteContent(noteContent + '\n\n> ' + selection.text + '\n\n');
+                clearSelection();
+              }}
+              onDiscussWithAI={handleDiscussWithAI}
+              onHighlight={handleHighlight}
+              onClose={clearSelection}
+              onDismiss={dismissPopover}
+            />
+          )}
+
           {activeHighlight && activeHighlightPosition && (
             <HighlightPopover
               highlight={activeHighlight}
@@ -278,6 +332,18 @@ function App() {
               onDelete={removeHighlight}
               onAskAI={handleAskAI}
               onClose={clearActiveHighlight}
+            />
+          )}
+
+          {highlightPopoverData && !activeHighlight && (
+            <HighlightPopover
+              highlight={highlightPopoverData.highlight}
+              position={highlightPopoverData.position}
+              onUpdateAnnotation={handleEditAnnotation}
+              onChangeColor={handleChangeHighlightColor}
+              onDelete={removeHighlight}
+              onAskAI={handleAskAI}
+              onClose={clearSelection}
             />
           )}
 
