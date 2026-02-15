@@ -29,6 +29,7 @@ export class EPUBService {
   private resizeObserver: ResizeObserver | null = null;
   private renderVersion: number = 0;
   private keyListenerDocs: WeakSet<Document> = new WeakSet();
+  private currentTypography: Partial<TypographySettings> = {};
 
   /**
    * Generate a stable book ID from the file path
@@ -279,6 +280,11 @@ export class EPUBService {
     // Add event listener for when content is rendered
     rendition.on('rendered', () => {
       this.bindContentKeyHandlers();
+      if (this.currentTypography.backgroundColor) {
+        const isDarkBg = this.currentTypography.backgroundColor === '#1e1e1e';
+        const textColor = isDarkBg ? '#e0e0e0' : '#333333';
+        this.injectTextColorStyles(textColor);
+      }
     });
 
 
@@ -411,6 +417,8 @@ export class EPUBService {
       return;
     }
 
+    this.currentTypography = { ...this.currentTypography, ...settings };
+
     if (settings.fontFamily) {
       this.rendition.themes.override('font-family', settings.fontFamily);
     }
@@ -448,9 +456,6 @@ export class EPUBService {
 
       styleEl.textContent = `
         p, div, span, h1, h2, h3, h4, h5, h6, li, td, th {
-          color: ${textColor} !important;
-        }
-        a {
           color: ${textColor} !important;
         }
       `;
