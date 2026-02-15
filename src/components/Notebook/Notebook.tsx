@@ -14,6 +14,7 @@ interface NotebookProps {
   onNavigateToHighlight: (cfi: string) => void;
   onEditAnnotation: (id: string, annotation: string) => void;
   onDeleteHighlight: (id: string) => void;
+  onExportNotes: (markdown: string) => void;
 }
 
 export function Notebook({
@@ -25,6 +26,7 @@ export function Notebook({
   onNavigateToHighlight,
   onEditAnnotation,
   onDeleteHighlight,
+  onExportNotes,
 }: NotebookProps) {
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
     new Set()
@@ -64,15 +66,7 @@ export function Notebook({
   const handleExport = () => {
     const markdown = generateNotesFromHighlights(highlights, bookTitle, bookAuthor);
     const cleanMarkdown = stripMarkdownForExport(markdown);
-    const blob = new Blob([cleanMarkdown], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${bookTitle}-笔记.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    onExportNotes(cleanMarkdown);
   };
 
   const handleClickHighlight = (highlight: Highlight) => {
@@ -82,8 +76,16 @@ export function Notebook({
 
   return (
     <>
-      <div className={`notebook-backdrop ${isOpen ? 'open' : ''}`} onClick={onClose} />
-      <div className={`notebook-panel ${isOpen ? 'open' : ''}`}>
+      <div
+        className={`notebook-backdrop ${isOpen ? 'open' : ''}`}
+        onClick={onClose}
+        aria-hidden={!isOpen}
+      />
+      <div
+        className={`notebook-panel ${isOpen ? 'open' : ''}`}
+        aria-hidden={!isOpen}
+        {...(!isOpen && { inert: true })}
+      >
         <div className="notebook-header">
           <h3 className="notebook-title">笔记本</h3>
           <div className="notebook-actions">
