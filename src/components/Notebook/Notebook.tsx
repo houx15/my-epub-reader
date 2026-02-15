@@ -73,9 +73,14 @@ export function Notebook({
   };
 
   const handleExport = async () => {
-    const markdown = generateNotesFromHighlights(highlights, bookTitle, bookAuthor);
-    const cleanMarkdown = stripMarkdownForExport(markdown);
-    await exportViaElectron(cleanMarkdown, bookTitle);
+    try {
+      const markdown = generateNotesFromHighlights(highlights, bookTitle, bookAuthor);
+      const cleanMarkdown = stripMarkdownForExport(markdown);
+      await exportViaElectron(cleanMarkdown, bookTitle);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert(`导出失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
   };
 
   const handleClickHighlight = (highlight: Highlight) => {
