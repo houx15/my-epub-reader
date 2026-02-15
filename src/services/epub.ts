@@ -422,6 +422,13 @@ export class EPUBService {
     }
     if (settings.backgroundColor) {
       this.rendition.themes.override('background-color', settings.backgroundColor);
+      // Adjust text color based on background brightness for readability
+      const isDarkBg = settings.backgroundColor === '#1e1e1e';
+      if (isDarkBg) {
+        this.rendition.themes.override('color', '#e0e0e0');
+      } else {
+        this.rendition.themes.override('color', '#333333');
+      }
     }
   }
 

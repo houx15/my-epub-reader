@@ -97,7 +97,7 @@ export const useAppStore = create<AppState>((set) => ({
   })),
 
   // Typography state
-  typography: { fontFamily: 'Georgia', fontSize: 18, lineHeight: 1.8, backgroundColor: '#fefefe' },
+  typography: { fontFamily: 'Georgia', fontSize: 18, lineHeight: 1.8, backgroundColor: '#ffffff' },
   setTypography: (settings) => set((state) => ({ typography: { ...state.typography, ...settings } })),
 
   // Panel mode (replaces isLLMPanelCollapsed concept)

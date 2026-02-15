@@ -59,16 +59,37 @@ export const TypographyPopover: React.FC<TypographyPopoverProps> = ({
     }
   }, [onClose, anchorRef]);
 
+  const handleIframeClick = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    if (!isOpen) return;
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    const iframes = document.querySelectorAll('iframe');
+    iframes.forEach((iframe) => {
+      try {
+        iframe.contentDocument?.addEventListener('mousedown', handleIframeClick);
+      } catch {
+        // Cross-origin iframe, can't access
+      }
+    });
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousedown', handleClickOutside);
+      iframes.forEach((iframe) => {
+        try {
+          iframe.contentDocument?.removeEventListener('mousedown', handleIframeClick);
+        } catch {
+          // Cross-origin iframe, can't access
+        }
+      });
     };
-  }, [isOpen, handleKeyDown, handleClickOutside]);
+  }, [isOpen, handleKeyDown, handleClickOutside, handleIframeClick]);
 
   if (!isOpen) {
     return null;
