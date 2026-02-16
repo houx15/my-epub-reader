@@ -175,6 +175,16 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
     return classes.join(' ');
   };
 
+  const getSpreadWrapperClassName = () => {
+    const classes = ['book-spread-wrapper'];
+    if (animationDirection === 'forward') {
+      classes.push('turning-forward');
+    } else if (animationDirection === 'backward') {
+      classes.push('turning-backward');
+    }
+    return classes.join(' ');
+  };
+
   // Calculate stack widths based on progress
   const leftStackWidth = `calc(8px + ${clampedProgress * 25}px)`;
   const rightStackWidth = `calc(8px + ${(1 - clampedProgress) * 25}px)`;
@@ -187,7 +197,7 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
           style={{ width: leftStackWidth }}
         />
         <div className="book-page book-page-left" />
-        <div className="book-spread-wrapper">
+        <div className={getSpreadWrapperClassName()}>
           <div
             ref={bookSpreadRef}
             className={getSpreadClassName()}
