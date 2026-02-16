@@ -195,6 +195,16 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
     return classes.join(' ');
   };
 
+  const getContainerClassName = () => {
+    const classes = ['book-container'];
+    if (animationDirection === 'forward') {
+      classes.push('turning-forward');
+    } else if (animationDirection === 'backward') {
+      classes.push('turning-backward');
+    }
+    return classes.join(' ');
+  };
+
   // Calculate stack widths based on progress
   const stackBasePx = 8;
   const stackExtraPx = 25;
@@ -205,7 +215,7 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
 
   return (
     <div className="book-layout">
-      <div className="book-container">
+      <div className={getContainerClassName()}>
         <div
           className="page-stack page-stack-left"
           style={{ width: leftStackWidth }}

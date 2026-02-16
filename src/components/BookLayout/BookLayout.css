@@ -281,14 +281,15 @@
   height: calc(100% - 28px);
   margin-top: 14px;
   border-radius: 3px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width var(--motion-page-turn-duration) var(--motion-page-turn-ease);
   position: relative;
   transform-style: preserve-3d;
   z-index: 1;
+  will-change: width, transform, filter;
 }
 
 .page-stack-left {
-  margin-right: -12px;
+  margin-right: -18px;
   background:
     repeating-linear-gradient(
       to bottom,
@@ -296,6 +297,12 @@
       rgba(120, 98, 68, 0.06) 1px,
       rgba(255, 255, 255, 0.08) 1px,
       rgba(255, 255, 255, 0.08) 3px
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.62) 0%,
+      rgba(255, 255, 255, 0.2) 42%,
+      rgba(110, 90, 60, 0.16) 100%
     ),
     linear-gradient(
       to right,
@@ -340,10 +347,15 @@
   background: linear-gradient(to bottom, rgba(112, 86, 56, 0.28), rgba(112, 86, 56, 0.18), rgba(112, 86, 56, 0.28));
   border-radius: 2px;
   pointer-events: none;
+  box-shadow:
+    -3px 0 0 rgba(255, 255, 255, 0.24),
+    -6px 0 0 rgba(255, 255, 255, 0.16),
+    -9px 0 0 rgba(95, 78, 52, 0.09),
+    -12px 0 0 rgba(95, 78, 52, 0.06);
 }
 
 .page-stack-right {
-  margin-left: -12px;
+  margin-left: -18px;
   background:
     repeating-linear-gradient(
       to bottom,
@@ -351,6 +363,12 @@
       rgba(120, 98, 68, 0.05) 1px,
       rgba(255, 255, 255, 0.07) 1px,
       rgba(255, 255, 255, 0.07) 3px
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0.18) 42%,
+      rgba(110, 90, 60, 0.15) 100%
     ),
     linear-gradient(
       to left,
@@ -395,6 +413,52 @@
   background: linear-gradient(to bottom, rgba(112, 86, 56, 0.28), rgba(112, 86, 56, 0.18), rgba(112, 86, 56, 0.28));
   border-radius: 2px;
   pointer-events: none;
+  box-shadow:
+    3px 0 0 rgba(255, 255, 255, 0.24),
+    6px 0 0 rgba(255, 255, 255, 0.16),
+    9px 0 0 rgba(95, 78, 52, 0.09),
+    12px 0 0 rgba(95, 78, 52, 0.06);
+}
+
+/* Sync stack breathing with page turn direction */
+.book-container.turning-forward .page-stack-right {
+  animation: stack-breathe-right var(--motion-page-turn-duration) var(--motion-page-turn-ease);
+}
+
+.book-container.turning-forward .page-stack-left {
+  animation: stack-breathe-left-soft var(--motion-page-turn-duration) var(--motion-page-turn-ease);
+}
+
+.book-container.turning-backward .page-stack-left {
+  animation: stack-breathe-left var(--motion-page-turn-duration) var(--motion-page-turn-ease);
+}
+
+.book-container.turning-backward .page-stack-right {
+  animation: stack-breathe-right-soft var(--motion-page-turn-duration) var(--motion-page-turn-ease);
+}
+
+@keyframes stack-breathe-right {
+  0% { transform: rotateY(5deg) translateZ(-10px) scaleX(1); filter: brightness(1); }
+  45% { transform: rotateY(5deg) translateZ(-10px) scaleX(1.035); filter: brightness(1.05); }
+  100% { transform: rotateY(5deg) translateZ(-10px) scaleX(1); filter: brightness(1); }
+}
+
+@keyframes stack-breathe-left {
+  0% { transform: rotateY(-5deg) translateZ(-10px) scaleX(1); filter: brightness(1); }
+  45% { transform: rotateY(-5deg) translateZ(-10px) scaleX(1.035); filter: brightness(1.05); }
+  100% { transform: rotateY(-5deg) translateZ(-10px) scaleX(1); filter: brightness(1); }
+}
+
+@keyframes stack-breathe-left-soft {
+  0% { transform: rotateY(-5deg) translateZ(-10px) scaleX(1); filter: brightness(1); }
+  45% { transform: rotateY(-5deg) translateZ(-10px) scaleX(0.992); filter: brightness(0.98); }
+  100% { transform: rotateY(-5deg) translateZ(-10px) scaleX(1); filter: brightness(1); }
+}
+
+@keyframes stack-breathe-right-soft {
+  0% { transform: rotateY(5deg) translateZ(-10px) scaleX(1); filter: brightness(1); }
+  45% { transform: rotateY(5deg) translateZ(-10px) scaleX(0.992); filter: brightness(0.98); }
+  100% { transform: rotateY(5deg) translateZ(-10px) scaleX(1); filter: brightness(1); }
 }
 
 /* ==============================
