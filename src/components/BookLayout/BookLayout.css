@@ -560,40 +560,89 @@
   position: absolute;
   inset: 0;
   z-index: 18;
+  background: rgba(255, 252, 243, 0.84);
   display: flex;
   align-items: center;
   justify-content: center;
-  background:
-    linear-gradient(180deg, rgba(255, 252, 243, 0.92), rgba(249, 242, 225, 0.94));
+  padding: clamp(10px, 2vw, 18px);
 }
 
-.end-page-content {
-  width: min(76%, 720px);
-  padding: clamp(20px, 3vh, 32px) clamp(20px, 3vw, 36px);
-  border-radius: 10px;
-  border: 1px solid rgba(143, 110, 70, 0.22);
-  background: rgba(255, 253, 246, 0.9);
+.end-page-modal {
+  width: min(760px, 94%);
+  max-height: 92%;
+  overflow: auto;
+  padding: clamp(16px, 2.6vh, 28px) clamp(16px, 2.4vw, 28px);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.7), transparent 60%),
+    linear-gradient(180deg, rgba(255, 253, 247, 0.97), rgba(246, 238, 224, 0.96));
+  border: 1px solid rgba(143, 110, 70, 0.2);
   box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    0 20px 50px rgba(34, 25, 16, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
 .end-page-title {
-  font-size: clamp(32px, 4vw, 44px);
+  font-size: clamp(24px, 2.6vw, 36px);
   letter-spacing: 0.04em;
   color: #4f3b1f;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 .end-page-subtitle {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   color: #6b5842;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.end-mode-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: min(260px, 100%);
+  margin-bottom: 12px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(208, 188, 160, 0.34);
+  border: 1px solid rgba(143, 110, 70, 0.24);
+}
+
+.end-mode-switch-btn {
+  position: relative;
+  z-index: 2;
+  height: 30px;
+  border-radius: 999px;
+  background: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #654c2e;
+}
+
+.end-mode-switch-btn.active {
+  color: #3f2f1c;
+}
+
+.end-mode-switch-pill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(245, 235, 219, 0.92));
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0.2, 1);
+}
+
+.end-mode-switch-pill.chat {
+  transform: translateX(100%);
 }
 
 .end-page-textarea {
   width: 100%;
-  min-height: 180px;
+  min-height: 230px;
   resize: vertical;
   padding: 12px 14px;
   font-size: 14px;
@@ -612,9 +661,10 @@
 
 .end-page-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 10px;
   margin-top: 12px;
+  flex-wrap: wrap;
 }
 
 .end-page-btn {
@@ -642,6 +692,75 @@
 
 .end-page-btn-secondary:hover {
   background: rgba(255, 255, 255, 0.95);
+}
+
+.end-chat-thread {
+  min-height: 180px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid rgba(143, 110, 70, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 10px;
+}
+
+.end-chat-note {
+  margin: 2px 0 10px;
+  color: #705a40;
+  font-size: 12px;
+}
+
+.end-chat-empty {
+  color: #7b6850;
+  font-size: 13px;
+}
+
+.end-chat-msg {
+  margin-bottom: 8px;
+}
+
+.end-chat-msg-role {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7a6142;
+  margin-bottom: 2px;
+}
+
+.end-chat-msg-content {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #3d3225;
+  white-space: pre-wrap;
+}
+
+.end-chat-input-row {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.end-chat-input {
+  min-height: 64px;
+  resize: vertical;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 1px solid rgba(143, 110, 70, 0.25);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.end-chat-summary-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #5d4a31;
+}
+
+.end-chat-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #b0493c;
 }
 
 @keyframes page-curl-forward {
@@ -771,13 +890,23 @@
     animation: none;
   }
 
-  .end-page-content {
-    width: 88%;
-    padding: 18px;
+  .end-page-modal {
+    width: 96%;
+    max-height: 94%;
+    padding: 14px;
   }
 
   .end-page-textarea {
     min-height: 140px;
+  }
+
+  .end-chat-thread {
+    min-height: 140px;
+    max-height: 240px;
+  }
+
+  .end-chat-input-row {
+    grid-template-columns: 1fr;
   }
 }
 

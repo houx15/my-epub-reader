@@ -14,10 +14,19 @@ export interface BookLayoutProps {
   progress: number;
   onContentClick?: () => void;
   showEndPage?: boolean;
+  endMode?: 'write' | 'chat';
+  onEndModeChange?: (mode: 'write' | 'chat') => void;
   endThoughts?: string;
   onEndThoughtsChange?: (value: string) => void;
-  onEndSubmit?: () => void;
   onEndExport?: () => void;
+  endChatMessages?: Array<{ role: 'user' | 'assistant'; content: string; timestamp: number }>;
+  endChatInput?: string;
+  onEndChatInputChange?: (value: string) => void;
+  onEndChatSend?: () => void;
+  onEndChatSummarize?: () => void;
+  endChatSummary?: string;
+  endChatLoading?: boolean;
+  endChatError?: string | null;
 }
 
 export interface BookLayoutRef {
@@ -33,10 +42,19 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
     progress,
     onContentClick,
     showEndPage = false,
+    endMode = 'write',
+    onEndModeChange,
     endThoughts = '',
     onEndThoughtsChange,
-    onEndSubmit,
     onEndExport,
+    endChatMessages = [],
+    endChatInput = '',
+    onEndChatInputChange,
+    onEndChatSend,
+    onEndChatSummarize,
+    endChatSummary = '',
+    endChatLoading = false,
+    endChatError = null,
   },
   ref
 ) {
@@ -231,29 +249,93 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
           >
             {showEndPage && (
               <div className="end-page-overlay" onClick={(e) => e.stopPropagation()}>
-                <div className="end-page-content">
+                <div className="end-page-modal">
                   <h2 className="end-page-title">End</h2>
-                  <p className="end-page-subtitle">Add your final thoughts for this book.</p>
-                  <textarea
-                    className="end-page-textarea"
-                    placeholder="Write what stayed with you..."
-                    value={endThoughts}
-                    onChange={(e) => onEndThoughtsChange?.(e.target.value)}
-                  />
-                  <div className="end-page-actions">
+                  <p className="end-page-subtitle">Write your final thoughts or chat with AI about this book.</p>
+                  <div className="end-mode-switch" role="tablist" aria-label="End mode">
                     <button
-                      className="end-page-btn end-page-btn-primary"
-                      onClick={onEndSubmit}
+                      className={`end-mode-switch-btn ${endMode === 'write' ? 'active' : ''}`}
+                      onClick={() => onEndModeChange?.('write')}
                     >
-                      Submit to Notes
+                      Write
                     </button>
                     <button
-                      className="end-page-btn end-page-btn-secondary"
-                      onClick={onEndExport}
+                      className={`end-mode-switch-btn ${endMode === 'chat' ? 'active' : ''}`}
+                      onClick={() => onEndModeChange?.('chat')}
                     >
-                      Export Notes
+                      Chat
                     </button>
+                    <span className={`end-mode-switch-pill ${endMode === 'chat' ? 'chat' : 'write'}`} />
                   </div>
+
+                  {endMode === 'write' ? (
+                    <>
+                      <textarea
+                        className="end-page-textarea"
+                        placeholder="Write what stayed with you..."
+                        value={endThoughts}
+                        onChange={(e) => onEndThoughtsChange?.(e.target.value)}
+                      />
+                      <div className="end-page-actions">
+                        <button
+                          className="end-page-btn end-page-btn-primary"
+                          onClick={onEndExport}
+                        >
+                          Export Notes
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="end-chat-note">
+                        Ask questions about this book. Use "Summarize to Notes" to save the chat takeaway.
+                      </div>
+                      <div className="end-chat-thread">
+                        {endChatMessages.length === 0 && (
+                          <div className="end-chat-empty">No messages yet.</div>
+                        )}
+                        {endChatMessages.map((msg, idx) => (
+                          <div key={`${msg.timestamp}-${idx}`} className={`end-chat-msg ${msg.role}`}>
+                            <div className="end-chat-msg-role">{msg.role === 'user' ? 'You' : 'AI'}</div>
+                            <div className="end-chat-msg-content">{msg.content}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="end-chat-input-row">
+                        <textarea
+                          className="end-chat-input"
+                          placeholder="Ask about themes, characters, arguments..."
+                          value={endChatInput}
+                          onChange={(e) => onEndChatInputChange?.(e.target.value)}
+                          disabled={endChatLoading}
+                        />
+                        <button
+                          className="end-page-btn end-page-btn-primary"
+                          onClick={onEndChatSend}
+                          disabled={endChatLoading || !endChatInput.trim()}
+                        >
+                          Send
+                        </button>
+                      </div>
+                      {endChatSummary && <div className="end-chat-summary-hint">Summary saved to notes.</div>}
+                      {endChatError && <div className="end-chat-error">{endChatError}</div>}
+                      <div className="end-page-actions">
+                        <button
+                          className="end-page-btn end-page-btn-secondary"
+                          onClick={onEndChatSummarize}
+                          disabled={endChatLoading || endChatMessages.length === 0}
+                        >
+                          Summarize to Notes
+                        </button>
+                        <button
+                          className="end-page-btn end-page-btn-primary"
+                          onClick={onEndExport}
+                        >
+                          Export Notes
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
