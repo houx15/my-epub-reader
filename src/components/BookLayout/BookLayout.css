@@ -61,6 +61,7 @@
   height: calc(100% - clamp(56px, 8vh, 92px));
   min-height: min(76vh, 780px);
   transform-style: preserve-3d;
+  z-index: 3;
 }
 
 /* The main book spread - the reading area */
@@ -85,6 +86,8 @@
     /* Inner shadow for page depth */
     inset -30px 0 60px var(--book-inner-shadow-right),
     inset 30px 0 60px var(--book-inner-shadow-left),
+    inset 0 14px 28px rgba(130, 100, 63, 0.04),
+    inset 0 -16px 32px rgba(80, 58, 34, 0.06),
     /* Spine shadow */
     inset 0 0 0 1px rgba(0, 0, 0, 0.1);
   cursor: text;
@@ -110,6 +113,10 @@
   mix-blend-mode: multiply;
 }
 
+.book-spread::selection {
+  background: rgba(138, 102, 54, 0.22);
+}
+
 /* Left page decorative edge */
 .book-page-left {
   flex-shrink: 0;
@@ -131,6 +138,7 @@
     inset 0 0 0 1px rgba(96, 75, 43, 0.08);
   position: relative;
   transform: translateZ(-5px);
+  z-index: 2;
 }
 
 /* Page edge lines effect for left page */
@@ -182,6 +190,7 @@
     inset 0 0 0 1px rgba(96, 75, 43, 0.08);
   position: relative;
   transform: translateZ(-5px);
+  z-index: 2;
 }
 
 /* Page edge lines effect for right page */
@@ -218,40 +227,38 @@
   left: 50%;
   top: 0;
   bottom: 0;
-  width: clamp(30px, 3vw, 42px);
+  width: clamp(10px, 1vw, 14px);
   transform: translateX(-50%);
   background: linear-gradient(
     to right,
-    transparent 0%,
-    var(--book-spine-light) 20%,
-    var(--book-spine-mid) 45%,
-    var(--book-spine-dark) 50%,
-    var(--book-spine-mid) 55%,
-    var(--book-spine-light) 80%,
-    transparent 100%
+    rgba(28, 20, 12, 0.34) 0%,
+    rgba(40, 28, 17, 0.46) 18%,
+    rgba(58, 42, 25, 0.28) 36%,
+    rgba(255, 255, 255, 0.22) 76%,
+    rgba(255, 255, 255, 0.06) 100%
   );
   z-index: 10;
   pointer-events: none;
-  box-shadow: 
-    inset 0 0 20px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    -2px 0 6px rgba(0, 0, 0, 0.12),
+    2px 0 6px rgba(255, 255, 255, 0.08);
 }
 
 /* Spine highlight */
 .book-spine::after {
   content: '';
   position: absolute;
-  left: 50%;
+  left: 1px;
   top: 0;
   bottom: 0;
-  width: 2px;
-  transform: translateX(-50%);
+  width: 1px;
   background: linear-gradient(
     to bottom,
-    transparent 0%,
-    rgba(139, 90, 43, 0.2) 10%,
-    rgba(139, 90, 43, 0.3) 50%,
-    rgba(139, 90, 43, 0.2) 90%,
-    transparent 100%
+    rgba(20, 14, 9, 0) 0%,
+    rgba(20, 14, 9, 0.5) 14%,
+    rgba(20, 14, 9, 0.68) 50%,
+    rgba(20, 14, 9, 0.5) 86%,
+    rgba(20, 14, 9, 0) 100%
   );
 }
 
@@ -277,19 +284,26 @@
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   transform-style: preserve-3d;
+  z-index: 1;
 }
 
 .page-stack-left {
   margin-right: -12px;
-  background: linear-gradient(
-    to right,
-    #d4d0c5 0%,
-    #ddd9ce 10%,
-    #e5e1d6 30%,
-    #ebe7dc 50%,
-    #f0ece0 80%,
-    #f5f1e8 100%
-  );
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(120, 98, 68, 0.06) 0px,
+      rgba(120, 98, 68, 0.06) 1px,
+      rgba(255, 255, 255, 0.08) 1px,
+      rgba(255, 255, 255, 0.08) 3px
+    ),
+    linear-gradient(
+      to right,
+      rgba(248, 244, 233, 0.96) 0%,
+      rgba(239, 232, 216, 0.94) 32%,
+      rgba(224, 214, 196, 0.92) 70%,
+      rgba(191, 174, 146, 0.86) 100%
+    );
   border-radius: 4px 2px 2px 4px;
   box-shadow: 
     -4px 4px 12px rgba(0, 0, 0, 0.25),
@@ -307,27 +321,44 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 3px,
-    rgba(0, 0, 0, 0.04) 3px,
-    rgba(0, 0, 0, 0.04) 4px
-  );
+  background:
+    linear-gradient(to right, rgba(255, 255, 255, 0.15), transparent 46%, rgba(0, 0, 0, 0.08)),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
   border-radius: 4px 2px 2px 4px;
+  background-size: auto, 64px 64px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.page-stack-left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(112, 86, 56, 0.28), rgba(112, 86, 56, 0.18), rgba(112, 86, 56, 0.28));
+  border-radius: 2px;
+  pointer-events: none;
 }
 
 .page-stack-right {
   margin-left: -12px;
-  background: linear-gradient(
-    to left,
-    #d4d0c5 0%,
-    #ddd9ce 10%,
-    #e5e1d6 30%,
-    #ebe7dc 50%,
-    #f0ece0 80%,
-    #f5f1e8 100%
-  );
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(120, 98, 68, 0.05) 0px,
+      rgba(120, 98, 68, 0.05) 1px,
+      rgba(255, 255, 255, 0.07) 1px,
+      rgba(255, 255, 255, 0.07) 3px
+    ),
+    linear-gradient(
+      to left,
+      rgba(248, 244, 233, 0.96) 0%,
+      rgba(239, 232, 216, 0.94) 32%,
+      rgba(224, 214, 196, 0.92) 70%,
+      rgba(191, 174, 146, 0.86) 100%
+    );
   border-radius: 2px 4px 4px 2px;
   box-shadow: 
     4px 4px 12px rgba(0, 0, 0, 0.25),
@@ -345,14 +376,25 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 3px,
-    rgba(0, 0, 0, 0.04) 3px,
-    rgba(0, 0, 0, 0.04) 4px
-  );
+  background:
+    linear-gradient(to left, rgba(255, 255, 255, 0.15), transparent 46%, rgba(0, 0, 0, 0.08)),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
   border-radius: 2px 4px 4px 2px;
+  background-size: auto, 64px 64px;
+  opacity: 0.52;
+  pointer-events: none;
+}
+
+.page-stack-right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(112, 86, 56, 0.28), rgba(112, 86, 56, 0.18), rgba(112, 86, 56, 0.28));
+  border-radius: 2px;
+  pointer-events: none;
 }
 
 /* ==============================

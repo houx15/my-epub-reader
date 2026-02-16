@@ -196,8 +196,12 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
   };
 
   // Calculate stack widths based on progress
-  const leftStackWidth = `calc(8px + ${clampedProgress * 25}px)`;
-  const rightStackWidth = `calc(8px + ${(1 - clampedProgress) * 25}px)`;
+  const stackBasePx = 8;
+  const stackExtraPx = 25;
+  const leftThickness = stackBasePx + stackExtraPx * Math.sqrt(clampedProgress);
+  const rightThickness = stackBasePx + stackExtraPx * Math.sqrt(1 - clampedProgress);
+  const leftStackWidth = `${leftThickness.toFixed(2)}px`;
+  const rightStackWidth = `${rightThickness.toFixed(2)}px`;
 
   return (
     <div className="book-layout">
