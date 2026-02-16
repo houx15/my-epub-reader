@@ -46,6 +46,22 @@ export function useEPUB(): UseEPUBReturn {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedCFIRef = useRef<string | null>(null);
 
+  const normalizeHref = useCallback((href: string): string => href.split('#')[0], []);
+
+  const findChapterByHref = useCallback((items: Chapter[], href: string): Chapter | null => {
+    const normalized = normalizeHref(href);
+    for (const item of items) {
+      if (normalizeHref(item.href) === normalized) {
+        return item;
+      }
+      if (item.children && item.children.length > 0) {
+        const found = findChapterByHref(item.children, href);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, [normalizeHref]);
+
   /**
    * Load a book from file path
    */
@@ -148,6 +164,13 @@ export function useEPUB(): UseEPUBReturn {
         // Update progress on every relocation
         updateProgress();
 
+        if (location.href) {
+          const chapter = findChapterByHref(chapters, location.href);
+          if (chapter) {
+            setCurrentChapter(chapter);
+          }
+        }
+
         if (!currentBook) return;
         if (!location.cfi || location.cfi === lastSavedCFIRef.current) {
           return;
@@ -188,7 +211,7 @@ export function useEPUB(): UseEPUBReturn {
       console.error('Error rendering book:', error);
       throw error;
     }
-  }, [currentBook, theme, updateProgress]);
+  }, [currentBook, theme, updateProgress, findChapterByHref, chapters]);
 
   /**
    * Navigate to a chapter
@@ -202,20 +225,7 @@ export function useEPUB(): UseEPUBReturn {
       await epubService.current.goToChapter(href);
 
       // Find and set current chapter
-      const findChapterByHref = (chaps: Chapter[]): Chapter | null => {
-        for (const chapter of chaps) {
-          if (chapter.href === href) {
-            return chapter;
-          }
-          if (chapter.children) {
-            const found = findChapterByHref(chapter.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-
-      const chapter = findChapterByHref(chapters);
+      const chapter = findChapterByHref(chapters, href);
       if (chapter) {
         setCurrentChapter(chapter);
       }
@@ -237,7 +247,7 @@ export function useEPUB(): UseEPUBReturn {
       setError(error);
       console.error('Error navigating to chapter:', error);
     }
-  }, [currentBook, chapters, setCurrentBook]);
+  }, [currentBook, chapters, setCurrentBook, findChapterByHref]);
 
 
 

@@ -17,7 +17,8 @@ import { useHighlights } from './hooks/useHighlights';
 import { useSelection } from './hooks/useSelection';
 import { useAppStore } from './stores/appStore';
 import { getEPUBService } from './services/epub';
-import { insertSummaryAfterSelection } from './services/noteUtils';
+import { getStorageService } from './services/storage';
+import { insertSummaryAfterSelection, stripMarkdownForExport, updateLastModifiedDate } from './services/noteUtils';
 import type { Highlight, HighlightColor } from './types';
 
 function App() {
@@ -72,6 +73,8 @@ function App() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isTOCOpen, setIsTOCOpen] = useState(false);
+  const [showEndPage, setShowEndPage] = useState(false);
+  const [endThoughts, setEndThoughts] = useState('');
   const [aiContext, setAiContext] = useState<{ text: string; cfi: string; chapterTitle: string } | null>(null);
   const [uiVisible, setUiVisible] = useState(true);
   const hideUiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,8 +84,16 @@ function App() {
     if (currentBook) {
       loadHighlightsForBook(currentBook.id);
       loadNotes(currentBook);
+      setShowEndPage(false);
+      setEndThoughts('');
     }
   }, [currentBook?.id, loadHighlightsForBook, loadNotes]);
+
+  useEffect(() => {
+    if (progress.percentage < 0.999 && showEndPage) {
+      setShowEndPage(false);
+    }
+  }, [progress.percentage, showEndPage]);
 
   useEffect(() => {
     const epubService = getEPUBService();
@@ -248,14 +259,28 @@ function App() {
   );
 
   const handleNextPage = useCallback(async () => {
+    if (showEndPage) {
+      return;
+    }
+    if (progress.percentage >= 0.999) {
+      bookLayoutRef.current?.triggerAnimation('forward');
+      setShowEndPage(true);
+      setUiVisible(true);
+      return;
+    }
     bookLayoutRef.current?.triggerAnimation('forward');
     await nextPage();
-  }, [nextPage]);
+  }, [nextPage, progress.percentage, showEndPage]);
 
   const handlePrevPage = useCallback(async () => {
+    if (showEndPage) {
+      bookLayoutRef.current?.triggerAnimation('backward');
+      setShowEndPage(false);
+      return;
+    }
     bookLayoutRef.current?.triggerAnimation('backward');
     await prevPage();
-  }, [prevPage]);
+  }, [prevPage, showEndPage]);
 
   const handleToggleNotebook = useCallback(() => {
     setPanelMode(panelMode === 'notebook' ? 'reading' : 'notebook');
@@ -270,10 +295,14 @@ function App() {
       setIsTOCOpen(false);
       return;
     }
+    if (showEndPage) {
+      setShowEndPage(false);
+      return;
+    }
     setPanelMode('reading');
     clearSelection();
     clearActiveHighlight();
-  }, [isTOCOpen, setPanelMode, clearSelection, clearActiveHighlight]);
+  }, [isTOCOpen, showEndPage, setPanelMode, clearSelection, clearActiveHighlight]);
 
   const handleOpenTOC = useCallback(() => {
     setUiVisible(true);
@@ -282,8 +311,45 @@ function App() {
 
   const handleSelectChapter = useCallback(async (href: string) => {
     await navigateToChapter(href);
+    setShowEndPage(false);
     setIsTOCOpen(false);
   }, [navigateToChapter]);
+
+  const persistNotesImmediately = useCallback(async (content: string) => {
+    if (!currentBook) return;
+    const normalized = updateLastModifiedDate(content);
+    setNoteContent(normalized);
+    const storage = await getStorageService();
+    await storage.saveNotes(currentBook.id, normalized);
+  }, [currentBook, setNoteContent]);
+
+  const handleSubmitEndThoughts = useCallback(async () => {
+    const thoughts = endThoughts.trim();
+    if (!thoughts) return;
+
+    const stamp = new Date().toLocaleString();
+    const section = `\n\n## End Notes\n\n${thoughts}\n\n*Added on ${stamp}*\n\n---\n`;
+    await persistNotesImmediately(noteContent + section);
+    setEndThoughts('');
+  }, [endThoughts, noteContent, persistNotesImmediately]);
+
+  const handleExportNotes = useCallback(async () => {
+    if (!currentBook) return;
+    try {
+      const result = await window.electron.showSaveDialog({
+        defaultPath: `${currentBook.title}-notes.md`,
+        filters: [{ name: 'Markdown', extensions: ['md'] }],
+      });
+
+      if (!result.canceled && result.filePath) {
+        const contentToExport = stripMarkdownForExport(noteContent);
+        await window.electron.writeFile(result.filePath, contentToExport);
+      }
+    } catch (error) {
+      console.error('Failed to export notes:', error);
+      alert('Failed to export notes.');
+    }
+  }, [currentBook, noteContent]);
 
   const handleHighlight = useCallback(
     (color: HighlightColor) => {
@@ -377,6 +443,11 @@ function App() {
             onPrevPage={handlePrevPage}
             progress={progress.percentage}
             onContentClick={hideUi}
+            showEndPage={showEndPage}
+            endThoughts={endThoughts}
+            onEndThoughtsChange={setEndThoughts}
+            onEndSubmit={handleSubmitEndThoughts}
+            onEndExport={handleExportNotes}
           />
 
           <TableOfContents

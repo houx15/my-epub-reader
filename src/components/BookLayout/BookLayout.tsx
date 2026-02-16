@@ -13,6 +13,11 @@ export interface BookLayoutProps {
   onPrevPage: () => void;
   progress: number;
   onContentClick?: () => void;
+  showEndPage?: boolean;
+  endThoughts?: string;
+  onEndThoughtsChange?: (value: string) => void;
+  onEndSubmit?: () => void;
+  onEndExport?: () => void;
 }
 
 export interface BookLayoutRef {
@@ -27,6 +32,11 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
     onPrevPage,
     progress,
     onContentClick,
+    showEndPage = false,
+    endThoughts = '',
+    onEndThoughtsChange,
+    onEndSubmit,
+    onEndExport,
   },
   ref
 ) {
@@ -66,7 +76,7 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
       if (isAnimatingRef.current) {
         handleAnimationEnd();
       }
-    }, 650);
+    }, 900);
   }, []);
 
   // Expose animation trigger to parent for keyboard navigation
@@ -204,7 +214,36 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
             onClick={handleSpreadClick}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-          />
+          >
+            {showEndPage && (
+              <div className="end-page-overlay" onClick={(e) => e.stopPropagation()}>
+                <div className="end-page-content">
+                  <h2 className="end-page-title">End</h2>
+                  <p className="end-page-subtitle">Add your final thoughts for this book.</p>
+                  <textarea
+                    className="end-page-textarea"
+                    placeholder="Write what stayed with you..."
+                    value={endThoughts}
+                    onChange={(e) => onEndThoughtsChange?.(e.target.value)}
+                  />
+                  <div className="end-page-actions">
+                    <button
+                      className="end-page-btn end-page-btn-primary"
+                      onClick={onEndSubmit}
+                    >
+                      Submit to Notes
+                    </button>
+                    <button
+                      className="end-page-btn end-page-btn-secondary"
+                      onClick={onEndExport}
+                    >
+                      Export Notes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
           <div className="book-spine" />
         </div>
         <div className="book-page book-page-right" />

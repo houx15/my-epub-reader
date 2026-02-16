@@ -58,7 +58,7 @@
   --scene-padding-y: clamp(16px, 3vh, 30px);
   --scene-padding-x: clamp(20px, 3vw, 44px);
 
-  --motion-page-turn-duration: 340ms;
+  --motion-page-turn-duration: 560ms;
   --motion-page-turn-ease: cubic-bezier(0.25, 0.75, 0.2, 1);
 }
 

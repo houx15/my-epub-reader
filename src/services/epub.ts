@@ -375,18 +375,19 @@ export class EPUBService {
   /**
    * Register a callback for location changes (relocated event)
    */
-  onRelocated(callback: (location: { cfi: string; percentage: number }) => void): void {
+  onRelocated(callback: (location: { cfi: string; percentage: number; href?: string }) => void): void {
     if (!this.rendition) {
       console.warn('Cannot register relocated listener: rendition not initialized');
       return;
     }
 
     this.rendition.on('relocated', (location: unknown) => {
-      const loc = location as { start?: { cfi: string; percentage?: number } };
+      const loc = location as { start?: { cfi: string; percentage?: number; href?: string } };
       if (loc && loc.start) {
         callback({
           cfi: loc.start.cfi,
           percentage: loc.start.percentage || 0,
+          href: loc.start.href,
         });
       }
     });
