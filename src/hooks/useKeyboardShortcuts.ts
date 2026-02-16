@@ -5,6 +5,7 @@ interface ShortcutHandlers {
   onSaveNotes?: () => void;
   onToggleAI?: () => void;
   onToggleNotebook?: () => void;
+  onOpenTOC?: () => void;
   onEscape?: () => void;
   onNextPage?: () => void;
   onPrevPage?: () => void;
@@ -51,6 +52,10 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
           case 'b':
             event.preventDefault();
             handlers.onToggleNotebook?.();
+            break;
+          case 'j':
+            event.preventDefault();
+            handlers.onOpenTOC?.();
             break;
           case ',':
             event.preventDefault();

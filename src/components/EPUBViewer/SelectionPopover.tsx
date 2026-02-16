@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { Highlighter, Underline, MessageSquare, Copy } from '../Icons';
 import { formatSelectionAsQuote } from '../../services/noteUtils';
-import { ColorPicker } from '../Highlights/ColorPicker';
 import type { Selection, HighlightColor } from '../../types';
 import './SelectionPopover.css';
 
@@ -25,7 +25,6 @@ export function SelectionPopover({
 }: SelectionPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
-  const [showColorPicker, setShowColorPicker] = useState(false);
 
   useEffect(() => {
     if (!popoverRef.current) return;
@@ -33,8 +32,6 @@ export function SelectionPopover({
     const popover = popoverRef.current;
     const rect = popover.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    // Viewport height is available at window.innerHeight
 
     let { x, y } = position;
 
@@ -50,9 +47,18 @@ export function SelectionPopover({
     }
 
     setAdjustedPosition({ x, y });
-  }, [position, showColorPicker]);
+  }, [position]);
 
-  const handleQuoteToNotes = () => {
+  const handleHighlight = () => {
+    // Use yellow as default color
+    onHighlight('yellow');
+    onClose();
+  };
+
+  const handleUnderlineToNotes = () => {
+    // Apply blue-pen underline highlight first
+    onHighlight('blue-pen');
+    // Then add to notes
     const formattedQuote = formatSelectionAsQuote(selection);
     onQuoteToNotes(formattedQuote);
     onClose();
@@ -72,15 +78,6 @@ export function SelectionPopover({
     }
   };
 
-  const handleHighlightClick = () => {
-    setShowColorPicker(!showColorPicker);
-  };
-
-  const handleColorSelect = (color: HighlightColor) => {
-    onHighlight(color);
-    onClose();
-  };
-
   return (
     <div
       ref={popoverRef}
@@ -95,38 +92,37 @@ export function SelectionPopover({
       <div className="popover-buttons">
         <button
           className="popover-button popover-button--highlight"
-          onClick={handleHighlightClick}
-          title="Highlight selected text"
+          onClick={handleHighlight}
+          title="Highlight with yellow"
         >
-          🖍 Highlight
+          <Highlighter size={16} />
+          <span>Highlight</span>
         </button>
         <button
-          className="popover-button"
-          onClick={handleQuoteToNotes}
-          title="Add quote to notes"
+          className="popover-button popover-button--underline"
+          onClick={handleUnderlineToNotes}
+          title="Underline and add to notes"
         >
-          📝 Quote
+          <Underline size={16} />
+          <span>Underline</span>
         </button>
         <button
           className="popover-button"
           onClick={handleDiscussWithAI}
           title="Discuss this selection with AI"
         >
-          💬 AI
+          <MessageSquare size={16} />
+          <span>AI</span>
         </button>
         <button
           className="popover-button"
           onClick={handleCopy}
           title="Copy to clipboard"
         >
-          📋 Copy
+          <Copy size={16} />
+          <span>Copy</span>
         </button>
       </div>
-      {showColorPicker && (
-        <div className="popover-color-picker">
-          <ColorPicker onColorSelect={handleColorSelect} size="medium" />
-        </div>
-      )}
     </div>
   );
 }

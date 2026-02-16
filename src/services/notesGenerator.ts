@@ -6,6 +6,9 @@ const COLOR_EMOJI_MAP: Record<HighlightColor, string> = {
   blue: '🔵',
   pink: '🩷',
   orange: '🟠',
+  'pencil': '✏️',
+  'red-pen': '🔴',
+  'blue-pen': '🔵',
 };
 
 function formatDate(timestamp: number): string {

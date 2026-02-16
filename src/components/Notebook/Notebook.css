@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 99;
+  z-index: 3090;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -24,7 +24,7 @@
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
   transform: translateX(100%);
   transition: transform 0.3s ease;
-  z-index: 100;
+  z-index: 3100;
   display: flex;
   flex-direction: column;
   pointer-events: none;
@@ -161,16 +161,26 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  gap: 8px;
 }
 
 .notebook-entry-chapter {
   font-size: 12px;
   color: var(--text-secondary, #666);
+  min-width: 0;
+}
+
+.notebook-entry-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .notebook-entry-meta {
   font-size: 11px;
   color: var(--text-muted, #999);
+  white-space: nowrap;
 }
 
 .notebook-entry-quote {
@@ -226,9 +236,6 @@
 }
 
 .notebook-entry-delete {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   background: none;
   border: none;
   cursor: pointer;

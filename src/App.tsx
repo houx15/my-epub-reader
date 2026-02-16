@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { BookOpen } from './components/Icons';
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { BookLayout, BookLayoutRef } from './components/BookLayout';
 import { Notebook } from './components/Notebook/Notebook';
 import { AIOverlay } from './components/AIOverlay/AIOverlay';
 import { SelectionPopover } from './components/EPUBViewer/SelectionPopover';
+import { TableOfContents } from './components/EPUBViewer/TableOfContents';
 import { HighlightPopover } from './components/Highlights/HighlightPopover';
 import { SettingsDialog } from './components/Settings/SettingsDialog';
 import { StatusBar } from './components/StatusBar/StatusBar';
@@ -69,7 +71,10 @@ function App() {
   } = useSelection({ current: null } as React.RefObject<HTMLElement>, currentChapter, chapters);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isTOCOpen, setIsTOCOpen] = useState(false);
   const [aiContext, setAiContext] = useState<{ text: string; cfi: string; chapterTitle: string } | null>(null);
+  const [uiVisible, setUiVisible] = useState(true);
+  const hideUiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const bookLayoutRef = useRef<BookLayoutRef>(null);
 
   useEffect(() => {
@@ -82,7 +87,7 @@ function App() {
   useEffect(() => {
     const epubService = getEPUBService();
     epubService.applyTypography(typography);
-  }, [typography]);
+  }, [typography, currentBook?.id]);
 
   useEffect(() => {
     const epubService = getEPUBService();
@@ -99,6 +104,66 @@ function App() {
       epubService.setAnimationCallbacks(null);
     };
   }, []);
+
+  // Auto-hide UI after inactivity
+  const resetHideTimer = useCallback(() => {
+    if (hideUiTimeoutRef.current) {
+      clearTimeout(hideUiTimeoutRef.current);
+    }
+    
+    // Only auto-hide when reading (not when panels are open or in empty state)
+    if (currentBook && panelMode === 'reading' && !settingsOpen) {
+      hideUiTimeoutRef.current = setTimeout(() => {
+        setUiVisible(false);
+      }, 3000); // Hide after 3 seconds of inactivity
+    }
+  }, [currentBook, panelMode, settingsOpen]);
+
+  const showUi = useCallback(() => {
+    setUiVisible(true);
+    resetHideTimer();
+  }, [resetHideTimer]);
+
+  const hideUi = useCallback(() => {
+    if (currentBook && panelMode === 'reading' && !settingsOpen) {
+      setUiVisible(false);
+    }
+  }, [currentBook, panelMode, settingsOpen]);
+
+  // Track mouse activity for auto-hide
+  useEffect(() => {
+    if (!currentBook || panelMode !== 'reading') {
+      setUiVisible(true);
+      return;
+    }
+
+    const handleMouseMove = () => {
+      showUi();
+    };
+
+    const handleKeyDown = () => {
+      showUi();
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('keydown', handleKeyDown);
+    resetHideTimer();
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('keydown', handleKeyDown);
+      if (hideUiTimeoutRef.current) {
+        clearTimeout(hideUiTimeoutRef.current);
+      }
+    };
+  }, [currentBook, panelMode, showUi, resetHideTimer]);
+
+  // Show UI when settings open or panel mode changes
+  useEffect(() => {
+    if (settingsOpen || panelMode !== 'reading') {
+      setUiVisible(true);
+    }
+  }, [settingsOpen, panelMode]);
 
   const handleOpenFile = useCallback(async () => {
     try {
@@ -201,10 +266,24 @@ function App() {
   }, [panelMode, setPanelMode]);
 
   const handleEscape = useCallback(() => {
+    if (isTOCOpen) {
+      setIsTOCOpen(false);
+      return;
+    }
     setPanelMode('reading');
     clearSelection();
     clearActiveHighlight();
-  }, [setPanelMode, clearSelection, clearActiveHighlight]);
+  }, [isTOCOpen, setPanelMode, clearSelection, clearActiveHighlight]);
+
+  const handleOpenTOC = useCallback(() => {
+    setUiVisible(true);
+    setIsTOCOpen(true);
+  }, []);
+
+  const handleSelectChapter = useCallback(async (href: string) => {
+    await navigateToChapter(href);
+    setIsTOCOpen(false);
+  }, [navigateToChapter]);
 
   const handleHighlight = useCallback(
     (color: HighlightColor) => {
@@ -233,6 +312,7 @@ function App() {
     },
     onToggleAI: handleToggleAI,
     onToggleNotebook: handleToggleNotebook,
+    onOpenTOC: handleOpenTOC,
     onEscape: handleEscape,
     onNextPage: handleNextPage,
     onPrevPage: handlePrevPage,
@@ -241,11 +321,14 @@ function App() {
 
   const renderEmptyState = () => (
     <div className="empty-state">
-      <div className="empty-state-icon">📖</div>
+      <div className="empty-state-icon">
+        <BookOpen size={64} strokeWidth={1} />
+      </div>
       <h2>Welcome to EPUB Reader</h2>
       <p>Open an EPUB file to get started</p>
-      <button className="btn-primary" onClick={handleOpenFile}>
-        📖 Open EPUB File
+      <button className="btn-primary empty-state-btn" onClick={handleOpenFile}>
+        <BookOpen size={18} />
+        <span>Open EPUB File</span>
       </button>
     </div>
   );
@@ -258,17 +341,24 @@ function App() {
 
   return (
     <div className="app">
-      <Toolbar
-        bookTitle={currentBook?.title || null}
-        onOpenFile={handleOpenFile}
-        onOpenSettings={() => setSettingsOpen(true)}
-        hasBook={!!currentBook}
-        onToggleNotebook={handleToggleNotebook}
-        onToggleAI={handleToggleAI}
-        panelMode={panelMode}
-        typography={typography}
-        onTypographyChange={setTypography}
-      />
+      <div className={`toolbar-wrapper ${uiVisible ? 'visible' : 'hidden'}`}>
+        <Toolbar
+          bookTitle={currentBook?.title || null}
+          onOpenFile={handleOpenFile}
+          onOpenSettings={() => setSettingsOpen(true)}
+          hasBook={!!currentBook}
+          onToggleNotebook={handleToggleNotebook}
+          onToggleAI={handleToggleAI}
+          panelMode={panelMode}
+          typography={typography}
+          onTypographyChange={setTypography}
+        />
+      </div>
+      
+      {/* Hover zone for toolbar */}
+      {!uiVisible && currentBook && panelMode === 'reading' && (
+        <div className="toolbar-hover-zone" onMouseEnter={showUi} />
+      )}
 
       {isLoading ? (
         renderLoadingState()
@@ -286,6 +376,15 @@ function App() {
             onNextPage={handleNextPage}
             onPrevPage={handlePrevPage}
             progress={progress.percentage}
+            onContentClick={hideUi}
+          />
+
+          <TableOfContents
+            chapters={chapters}
+            currentChapter={currentChapter}
+            isOpen={isTOCOpen}
+            onClose={() => setIsTOCOpen(false)}
+            onChapterSelect={handleSelectChapter}
           />
 
           <Notebook
@@ -347,16 +446,24 @@ function App() {
             />
           )}
 
-          <StatusBar
-            currentChapter={currentChapter}
-            totalChapters={chapters.length}
-            currentChapterIndex={
-              currentChapter
-                ? chapters.findIndex((ch) => ch.id === currentChapter.id)
-                : 0
-            }
-            progress={progress.percentage}
-          />
+          <div className={`statusbar-wrapper ${uiVisible ? 'visible' : 'hidden'}`}>
+            <StatusBar
+              currentChapter={currentChapter}
+              totalChapters={chapters.length}
+              currentChapterIndex={
+                currentChapter
+                  ? chapters.findIndex((ch) => ch.id === currentChapter.id)
+                  : 0
+              }
+              progress={progress.percentage}
+              onOpenTOC={handleOpenTOC}
+            />
+          </div>
+          
+          {/* Hover zone for status bar */}
+          {!uiVisible && currentBook && panelMode === 'reading' && (
+            <div className="statusbar-hover-zone" onMouseEnter={showUi} />
+          )}
         </>
       )}
 
@@ -368,6 +475,57 @@ function App() {
           flex-direction: column;
           height: 100vh;
           overflow: hidden;
+          position: relative;
+        }
+
+        .toolbar-wrapper {
+          transition: transform 0.3s ease, opacity 0.3s ease;
+          position: relative;
+          z-index: 3000;
+        }
+
+        .toolbar-wrapper.hidden {
+          transform: translateY(-100%);
+          opacity: 0;
+        }
+
+        .toolbar-wrapper.visible {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        .statusbar-wrapper {
+          transition: transform 0.3s ease, opacity 0.3s ease;
+          position: relative;
+          z-index: 2500;
+        }
+
+        .statusbar-wrapper.hidden {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+
+        .statusbar-wrapper.visible {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        .toolbar-hover-zone {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 12px;
+          z-index: 1000;
+        }
+
+        .statusbar-hover-zone {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 20px;
+          z-index: 2000;
         }
 
         .empty-state,
@@ -382,8 +540,15 @@ function App() {
         }
 
         .empty-state-icon {
-          font-size: 80px;
-          opacity: 0.3;
+          color: var(--text-tertiary);
+          opacity: 0.5;
+          margin-bottom: 16px;
+        }
+
+        .empty-state-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
 
         .empty-state h2 {

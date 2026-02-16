@@ -68,9 +68,20 @@ export function NotebookEntry({
     >
       <div className="notebook-entry-header">
         <span className="notebook-entry-chapter">{highlight.chapterTitle}</span>
-        <span className="notebook-entry-meta">
-          {colorEmoji} {formatDate(highlight.createdAt)}
-        </span>
+        <div className="notebook-entry-header-right">
+          <span className="notebook-entry-meta">
+            {colorEmoji} {formatDate(highlight.createdAt)}
+          </span>
+          {isHovered && (
+            <button
+              className="notebook-entry-delete"
+              onClick={() => onDelete(highlight.id)}
+              title="删除高亮"
+            >
+              🗑️
+            </button>
+          )}
+        </div>
       </div>
 
       <div
@@ -101,16 +112,6 @@ export function NotebookEntry({
         onBlur={handleBlur}
         rows={2}
       />
-
-      {isHovered && (
-        <button
-          className="notebook-entry-delete"
-          onClick={() => onDelete(highlight.id)}
-          title="删除高亮"
-        >
-          🗑️
-        </button>
-      )}
     </div>
   );
 }

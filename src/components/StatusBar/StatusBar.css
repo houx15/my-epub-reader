@@ -8,6 +8,12 @@
   border-top: 1px solid var(--border-color);
   font-size: 12px;
   color: var(--text-secondary);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.status-bar.hidden {
+  transform: translateY(100%);
+  opacity: 0;
 }
 
 .status-section {
@@ -33,6 +39,21 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chapter-jump-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
+.chapter-jump-btn:hover {
+  color: var(--text-primary);
 }
 
 .progress-info {
@@ -66,4 +87,14 @@
 
 .status-section span:not(.status-placeholder):hover {
   color: var(--text-primary);
+}
+
+/* Hover zone for showing hidden status bar */
+.statusbar-hover-zone {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  z-index: 999;
 }

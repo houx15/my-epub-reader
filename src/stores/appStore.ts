@@ -71,7 +71,18 @@ export const useAppStore = create<AppState>((set) => ({
     highlights: state.highlights.filter(h => h.id !== id)
   })),
 
-  typography: { fontFamily: 'Georgia', fontSize: 18, lineHeight: 1.8, backgroundColor: '#ffffff' },
+  typography: { 
+    fontFamily: 'Georgia', 
+    fontSize: 18, 
+    lineHeight: 1.8, 
+    paragraphSpacing: 1.0,
+    backgroundColor: '#ffffff',
+    cjkFontFamily: '"Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif',
+    cjkLetterSpacing: 0.05,
+    cjkAutoSpace: true,
+    textAlign: 'justify',
+    maxWidth: 40,
+  },
   setTypography: (settings) => set((state) => ({ typography: { ...state.typography, ...settings } })),
 
   panelMode: 'reading' as PanelMode,

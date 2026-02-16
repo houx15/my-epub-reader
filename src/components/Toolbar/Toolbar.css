@@ -1,62 +1,84 @@
 .toolbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   height: var(--toolbar-height);
-  padding: 0 var(--spacing-lg);
-  background-color: var(--bg-secondary);
+  padding: 0 16px;
+  background: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.toolbar.hidden {
+  transform: translateY(-100%);
+  opacity: 0;
 }
 
 .toolbar-left {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
+  gap: 16px;
   flex: 1;
-  min-width: 0;
 }
 
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: 8px;
+  position: relative;
 }
 
 .book-title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   color: var(--text-primary);
   margin: 0;
   max-width: 400px;
 }
 
-.toolbar button {
+.toolbar-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-  white-space: nowrap;
-  font-size: 14px;
-  padding: 8px 16px;
-  border-radius: 6px;
-}
-
-.toolbar button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  gap: 8px;
 }
 
 .btn-icon {
-  padding: 8px 12px !important;
-  min-width: 36px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.btn-icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .btn-icon.active {
   background-color: var(--accent-color);
   color: white;
+  border-color: var(--accent-color);
 }
 
-.btn-icon.active:hover {
-  background-color: var(--accent-hover);
+.btn-icon.active svg {
+  color: white;
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Hover zone for showing hidden toolbar */
+.toolbar-hover-zone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  z-index: 999;
 }

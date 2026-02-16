@@ -27,6 +27,7 @@
     "@tiptap/starter-kit": "^2.11.3",
     "epubjs": "^0.3.93",
     "lowlight": "^2.9.0",
+    "lucide-react": "^0.564.0",
     "marked": "^11.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

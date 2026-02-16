@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Bot, Trash2, X } from '../Icons';
 import { ColorPicker } from './ColorPicker';
 import type { Highlight, HighlightColor } from '../../types';
 import './HighlightPopover.css';
@@ -73,32 +74,12 @@ export function HighlightPopover({
       }
     };
 
-    const handleIframeClick = () => {
-      onClose();
-    };
-
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
-
-    const iframes = document.querySelectorAll('iframe');
-    iframes.forEach((iframe) => {
-      try {
-        iframe.contentDocument?.addEventListener('mousedown', handleIframeClick);
-      } catch {
-        // Cross-origin iframe, can't access
-      }
-    });
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
-      iframes.forEach((iframe) => {
-        try {
-          iframe.contentDocument?.removeEventListener('mousedown', handleIframeClick);
-        } catch {
-          // Cross-origin iframe, can't access
-        }
-      });
     };
   }, [onClose]);
 
@@ -145,7 +126,7 @@ export function HighlightPopover({
           "{truncatedText}"
         </div>
         <button className="highlight-popover-close" onClick={onClose} aria-label="Close">
-          ×
+          <X size={18} />
         </button>
       </div>
 
@@ -173,13 +154,15 @@ export function HighlightPopover({
 
       <div className="highlight-popover-actions">
         <button className="highlight-popover-btn highlight-popover-btn--ai" onClick={handleAskAI}>
-          🤖 Ask AI
+          <Bot size={16} />
+          <span>Ask AI</span>
         </button>
         <button 
           className={`highlight-popover-btn ${showDeleteConfirm ? 'highlight-popover-btn--danger-confirm' : 'highlight-popover-btn--danger'}`}
           onClick={handleDelete}
         >
-          {showDeleteConfirm ? '⚠️ Confirm Delete' : '🗑️ Delete'}
+          <Trash2 size={16} />
+          <span>{showDeleteConfirm ? 'Confirm Delete' : 'Delete'}</span>
         </button>
       </div>
     </div>

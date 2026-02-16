@@ -1,100 +1,130 @@
 .typography-popover {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 280px;
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  width: 320px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: var(--shadow-lg);
-  padding: var(--spacing-md);
-  z-index: 50;
-  margin-top: 4px;
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 10px 20px -2px rgba(0, 0, 0, 0.15),
+    0 25px 50px -5px rgba(0, 0, 0, 0.2);
+  padding: 0;
+  z-index: 9999;
+  font-size: 13px;
+}
+
+.typography-popover::-webkit-scrollbar {
+  width: 6px;
+}
+
+.typography-popover::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 0 12px 12px 0;
+}
+
+.typography-popover::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
 }
 
 .typography-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px 12px;
   font-weight: 600;
   font-size: 14px;
   color: var(--text-primary);
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--border-color);
 }
 
+.typography-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.typography-close:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
 .typography-section {
-  margin-bottom: var(--spacing-md);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .typography-section:last-child {
-  margin-bottom: 0;
+  border-bottom: none;
 }
 
 .typography-label {
   display: block;
   font-size: 12px;
+  font-weight: 500;
   color: var(--text-secondary);
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
+/* Select dropdown */
 .typography-select {
   width: 100%;
   padding: 8px 12px;
-  font-size: 14px;
-  font-family: inherit;
-  background: var(--bg-secondary);
+  font-size: 13px;
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
-  outline: none;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: all 0.2s ease;
 }
 
 .typography-select:hover {
-  background: var(--bg-tertiary);
+  border-color: var(--accent-color);
 }
 
 .typography-select:focus {
+  outline: none;
   border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
+.typography-select optgroup {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Slider row */
 .typography-slider-row {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 10px;
 }
 
-.typo-button {
-  width: 36px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-  flex-shrink: 0;
-}
-
-.typo-button:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--accent-color);
-}
-
-.typo-button:active {
-  background: var(--accent-color);
-  color: white;
-}
-
+/* Range slider */
 .typo-range {
   -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
+  flex: 1;
   height: 4px;
   background: var(--bg-tertiary);
   border-radius: 2px;
@@ -104,13 +134,13 @@
 
 .typo-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
   width: 18px;
   height: 18px;
   background: var(--accent-color);
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
 }
 
 .typo-range::-webkit-slider-thumb:hover {
@@ -121,57 +151,254 @@
   width: 18px;
   height: 18px;
   background: var(--accent-color);
+  border: none;
   border-radius: 50%;
   cursor: pointer;
-  border: none;
-  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.typo-range::-moz-range-thumb:hover {
-  transform: scale(1.1);
+/* Plus/minus buttons */
+.typo-button {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
+.typo-button:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-color);
+}
+
+.typo-button:active {
+  transform: scale(0.95);
+}
+
+.typo-icon-small {
+  font-size: 10px;
+}
+
+.typo-icon-large {
+  font-size: 16px;
+}
+
+.typo-icon-compact {
+  font-size: 12px;
+  line-height: 0.8;
+}
+
+.typo-icon-loose {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.typo-icon-para-tight {
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.typo-icon-para-loose {
+  font-size: 18px;
+  opacity: 1;
+}
+
+.typo-wide {
+  letter-spacing: 0.15em;
+}
+
+/* Value display */
 .typo-value {
   text-align: center;
   font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 4px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
 }
 
-.bg-swatches {
+/* Alignment options */
+.typo-alignment-options {
   display: flex;
-  gap: var(--spacing-sm);
-  justify-content: flex-start;
+  gap: 8px;
+}
+
+.typo-align-btn {
+  flex: 1;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typo-align-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+}
+
+.typo-align-btn.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+.typo-align-btn svg {
+  display: block;
+}
+
+/* Checkbox label */
+.typo-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  text-transform: none;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+
+.typo-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-color);
+  cursor: pointer;
+}
+
+/* Background swatches */
+.bg-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
 }
 
 .bg-swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 100%;
+  aspect-ratio: 1;
   border: 2px solid var(--border-color);
+  border-radius: 10px;
   cursor: pointer;
-  padding: 0;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   position: relative;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .bg-swatch:hover {
   transform: scale(1.05);
+  border-color: var(--accent-color);
 }
 
 .bg-swatch.selected {
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px var(--accent-color);
+  box-shadow: 0 0 0 2px var(--accent-color), 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.bg-swatch.selected::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.bg-swatch-check {
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .typography-popover {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 10px 20px -2px rgba(0, 0, 0, 0.4),
+    0 25px 50px -5px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .typography-select {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] .typo-button {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .typo-button:hover {
+  background: #3d3d3d;
+  border-color: var(--accent-color);
+}
+
+[data-theme="dark"] .typo-range {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .typo-align-btn {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .typo-align-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .typo-align-btn.active {
   background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: white;
+}
+
+/* Animation */
+@keyframes popover-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.typography-popover {
+  animation: popover-fade-in 0.2s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .typography-popover {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 70vh;
+    border-radius: 16px 16px 0 0;
+    animation: popover-slide-up 0.3s ease-out;
+  }
+
+  @keyframes popover-slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
 }

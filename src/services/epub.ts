@@ -280,10 +280,8 @@ export class EPUBService {
     // Add event listener for when content is rendered
     rendition.on('rendered', () => {
       this.bindContentKeyHandlers();
-      if (this.currentTypography.backgroundColor) {
-        const isDarkBg = this.currentTypography.backgroundColor === '#1e1e1e';
-        const textColor = isDarkBg ? '#e0e0e0' : '#333333';
-        this.injectTextColorStyles(textColor);
+      if (Object.keys(this.currentTypography).length > 0) {
+        this.applyTypography(this.currentTypography);
       }
     });
 
@@ -400,6 +398,9 @@ export class EPUBService {
   setTheme(theme: 'light' | 'dark'): void {
     if (this.rendition) {
       this.rendition.themes.select(theme);
+      if (Object.keys(this.currentTypography).length > 0) {
+        this.applyTypography(this.currentTypography);
+      }
     }
   }
 
@@ -413,31 +414,51 @@ export class EPUBService {
   }
 
   applyTypography(settings: Partial<TypographySettings>): void {
+    this.currentTypography = { ...this.currentTypography, ...settings };
+
     if (!this.rendition) {
       return;
     }
 
-    this.currentTypography = { ...this.currentTypography, ...settings };
+    const mergedSettings = this.currentTypography;
 
-    if (settings.fontFamily) {
-      this.rendition.themes.override('font-family', settings.fontFamily);
+    // Use epub.js themes.override for immediate effect
+    // This applies to all content in the rendition
+    
+    // Font family
+    if (mergedSettings.fontFamily !== undefined) {
+      // Don't wrap in extra quotes - the value from the dropdown is already properly quoted
+      this.rendition.themes.override('font-family', mergedSettings.fontFamily);
     }
-    if (settings.fontSize) {
-      this.rendition.themes.override('font-size', `${settings.fontSize}px`);
+
+    // Font size
+    if (mergedSettings.fontSize !== undefined) {
+      this.rendition.themes.override('font-size', `${mergedSettings.fontSize}px`);
     }
-    if (settings.lineHeight) {
-      this.rendition.themes.override('line-height', String(settings.lineHeight));
+
+    // Line height
+    if (mergedSettings.lineHeight !== undefined) {
+      this.rendition.themes.override('line-height', String(mergedSettings.lineHeight));
     }
-    if (settings.backgroundColor) {
-      this.rendition.themes.override('background-color', settings.backgroundColor);
-      const isDarkBg = settings.backgroundColor === '#1e1e1e';
+
+    // Background color and text color
+    if (mergedSettings.backgroundColor !== undefined) {
+      this.rendition.themes.override('background-color', mergedSettings.backgroundColor);
+      const isDarkBg = this.isDarkColor(mergedSettings.backgroundColor);
       const textColor = isDarkBg ? '#e0e0e0' : '#333333';
       this.rendition.themes.override('color', textColor);
-      this.injectTextColorStyles(textColor);
     }
+
+    // Build and inject comprehensive CSS for advanced features
+    this.injectTypographyStyles(mergedSettings);
   }
 
-  private injectTextColorStyles(textColor: string): void {
+  private isDarkColor(color: string): boolean {
+    const darkColors = ['#1e1e1e', '#2d2d2d', '#1a1a1a', '#000000', '#121212'];
+    return darkColors.includes(color.toLowerCase());
+  }
+
+  private injectTypographyStyles(settings: Partial<TypographySettings>): void {
     if (!this.rendition) return;
 
     const contents = this.rendition.getContents();
@@ -447,19 +468,126 @@ export class EPUBService {
       const doc = content?.document;
       if (!doc) return;
 
-      let styleEl = doc.getElementById('typography-override-styles');
+      let styleEl = doc.getElementById('epub-typography-styles');
       if (!styleEl) {
         styleEl = doc.createElement('style');
-        styleEl.id = 'typography-override-styles';
+        styleEl.id = 'epub-typography-styles';
         doc.head.appendChild(styleEl);
       }
 
-      styleEl.textContent = `
-        p, div, span, h1, h2, h3, h4, h5, h6, li, td, th {
-          color: ${textColor} !important;
+      // Build CSS text for advanced typography features
+      let cssText = '';
+
+      // Keep reading background controlled by Typography settings.
+      if (settings.backgroundColor !== undefined) {
+        const isDarkBg = this.isDarkColor(settings.backgroundColor);
+        const textColor = isDarkBg ? '#e0e0e0' : '#333333';
+        cssText += `
+          html, body {
+            background-color: ${settings.backgroundColor} !important;
+            color: ${textColor} !important;
+          }
+          p, div, span, h1, h2, h3, h4, h5, h6, li, td, th {
+            color: ${textColor} !important;
+          }
+        `;
+      }
+
+      // Paragraph spacing
+      if (settings.paragraphSpacing !== undefined) {
+        cssText += `
+          p {
+            margin-bottom: ${settings.paragraphSpacing}em !important;
+            margin-top: 0 !important;
+          }
+        `;
+      }
+
+      // Text alignment and indentation
+      if (settings.textAlign !== undefined) {
+        cssText += `
+          body, p, div {
+            text-align: ${settings.textAlign} !important;
+          }
+        `;
+        if (settings.textAlign === 'justify') {
+          cssText += `
+            p {
+              text-indent: 2em !important;
+            }
+          `;
+        } else {
+          cssText += `
+            p {
+              text-indent: 0 !important;
+            }
+          `;
+        }
+      }
+
+      // CJK specific styles
+      if (
+        settings.cjkFontFamily !== undefined ||
+        settings.cjkLetterSpacing !== undefined ||
+        settings.cjkAutoSpace !== undefined
+      ) {
+        cssText += this.generateCJKStyles(settings);
+      }
+
+      styleEl.textContent = cssText;
+    });
+  }
+
+  private generateCJKStyles(settings: Partial<TypographySettings>): string {
+    const letterSpacing = settings.cjkLetterSpacing ?? 0.05;
+    const autoSpace = settings.cjkAutoSpace ?? true;
+    const cjkFontFamily = settings.cjkFontFamily;
+
+    let styles = '';
+
+    if (cjkFontFamily) {
+      styles += `
+        /* Prefer selected CJK font stack for content. */
+        html, body, p, div, span, li, td, th, h1, h2, h3, h4, h5, h6 {
+          font-family: ${cjkFontFamily}, sans-serif !important;
         }
       `;
-    });
+    }
+
+    // CJK character styling
+    styles += `
+      /* CJK punctuation and character spacing */
+      html, body, p, div, span, li, td, th {
+        letter-spacing: ${letterSpacing}em !important;
+      }
+      
+      /* Better CJK punctuation handling */
+      .cjk-punc, 
+      [lang^="zh"] .punctuation,
+      [lang^="ja"] .punctuation {
+        letter-spacing: 0;
+        font-feature-settings: "palt" 1;
+      }
+    `;
+
+    // Auto-spacing between CJK and Latin
+    if (autoSpace) {
+      styles += `
+        /* Auto-spacing between CJK and Latin characters */
+        html, body {
+          text-autospace: ideograph-alpha ideograph-numeric;
+          word-spacing: 0.08em;
+        }
+        
+        /* Ensure proper spacing around CJK characters */
+        p {
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+      `;
+    }
+
+    return styles;
   }
 
   /**

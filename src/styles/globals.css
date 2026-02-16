@@ -89,6 +89,13 @@ p {
   line-height: 1.6;
 }
 
+/* SVG Icons */
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
 /* Buttons */
 button {
   font-family: inherit;
@@ -97,6 +104,10 @@ button {
   border: none;
   outline: none;
   transition: all 0.2s ease;
+}
+
+button svg {
+  display: block;
 }
 
 button:disabled {

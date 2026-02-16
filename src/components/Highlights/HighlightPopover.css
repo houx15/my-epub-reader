@@ -41,16 +41,19 @@
 .highlight-popover-close {
   background: none;
   border: none;
-  font-size: 20px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: 0;
-  line-height: 1;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
 .highlight-popover-close:hover {
   color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 
 .highlight-popover-section {
@@ -106,6 +109,10 @@
   transition: all 0.2s;
   background: var(--bg-secondary);
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .highlight-popover-btn:hover {

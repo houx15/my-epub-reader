@@ -12,6 +12,7 @@ export interface BookLayoutProps {
   onNextPage: () => void;
   onPrevPage: () => void;
   progress: number;
+  onContentClick?: () => void;
 }
 
 export interface BookLayoutRef {
@@ -25,11 +26,13 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
     onNextPage,
     onPrevPage,
     progress,
+    onContentClick,
   },
   ref
 ) {
   const bookSpreadRef = useRef<HTMLDivElement>(null);
   const [animationDirection, setAnimationDirection] = useState<'forward' | 'backward' | null>(null);
+  const [hoverZone, setHoverZone] = useState<'left' | 'right' | null>(null);
   const isAnimatingRef = useRef(false);
   const isRenderReadyCalledRef = useRef(false);
   const lastBookIdRef = useRef<string | undefined>(undefined);
@@ -63,7 +66,7 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
       if (isAnimatingRef.current) {
         handleAnimationEnd();
       }
-    }, 450);
+    }, 650);
   }, []);
 
   // Expose animation trigger to parent for keyboard navigation
@@ -79,18 +82,42 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
     const spreadWidth = rect.width;
     const relativeX = clickX / spreadWidth;
 
-    if (relativeX < 0.3) {
+    // Left 25% area - go to previous page
+    if (relativeX < 0.25) {
       triggerPageTurnAnimation('backward');
       onPrevPage();
-    } else if (relativeX > 0.7) {
+    }
+    // Right 25% area - go to next page
+    else if (relativeX > 0.75) {
       triggerPageTurnAnimation('forward');
       onNextPage();
     }
-  }, [onPrevPage, onNextPage, triggerPageTurnAnimation]);
+    // Middle 50% - text selection area, trigger content click
+    else {
+      onContentClick?.();
+    }
+  }, [onPrevPage, onNextPage, triggerPageTurnAnimation, onContentClick]);
+
+  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!bookSpreadRef.current) return;
+
+    const rect = bookSpreadRef.current.getBoundingClientRect();
+    const relativeX = (event.clientX - rect.left) / rect.width;
+
+    if (relativeX < 0.25) {
+      setHoverZone('left');
+    } else if (relativeX > 0.75) {
+      setHoverZone('right');
+    } else {
+      setHoverZone(null);
+    }
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoverZone(null);
+  }, []);
 
   // Use ResizeObserver to handle initial render and size changes
-  // Guarded with isRenderReadyCalledRef to prevent re-initialization on callback identity changes
-  // Effect re-runs when bookId changes (guard is reset in the effect above)
   useEffect(() => {
     if (!bookSpreadRef.current || isRenderReadyCalledRef.current) return;
 
@@ -140,29 +167,40 @@ export const BookLayout = forwardRef<BookLayoutRef, BookLayoutProps>(function Bo
     } else if (animationDirection === 'backward') {
       classes.push('turning-backward');
     }
+    if (hoverZone === 'left') {
+      classes.push('click-prev');
+    } else if (hoverZone === 'right') {
+      classes.push('click-next');
+    }
     return classes.join(' ');
   };
+
+  // Calculate stack widths based on progress
+  const leftStackWidth = `calc(8px + ${clampedProgress * 25}px)`;
+  const rightStackWidth = `calc(8px + ${(1 - clampedProgress) * 25}px)`;
 
   return (
     <div className="book-layout">
       <div className="book-container">
         <div
           className="page-stack page-stack-left"
-          style={{ width: `calc(3px + ${clampedProgress} * 12px)` }}
+          style={{ width: leftStackWidth }}
         />
+        <div className="book-page book-page-left" />
         <div className="book-spread-wrapper">
-          <div className="book-page book-page-left" />
           <div
             ref={bookSpreadRef}
             className={getSpreadClassName()}
             onClick={handleSpreadClick}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
           />
           <div className="book-spine" />
-          <div className="book-page book-page-right" />
         </div>
+        <div className="book-page book-page-right" />
         <div
           className="page-stack page-stack-right"
-          style={{ width: `calc(3px + ${(1 - clampedProgress)} * 12px)` }}
+          style={{ width: rightStackWidth }}
         />
       </div>
       <PageStack progress={clampedProgress} />

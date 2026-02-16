@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { X, Check, Sun, Moon, Monitor, Lightbulb } from '../Icons';
 import { useAppStore } from '../../stores/appStore';
 import { createLLMService } from '../../services/llm';
 import './SettingsDialog.css';
@@ -219,7 +220,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         </button>
         {moveResult && (
           <div className={`api-test-result ${moveResult.success ? 'success' : 'error'}`}>
-            {moveResult.success ? '✓' : '✗'} {moveResult.message}
+            {moveResult.success ? <Check size={16} /> : <X size={16} />} {moveResult.message}
           </div>
         )}
       </div>
@@ -267,7 +268,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
               apiTestResult.success ? 'success' : 'error'
             }`}
           >
-            {apiTestResult.success ? '✓' : '✗'} {apiTestResult.message}
+            {apiTestResult.success ? <Check size={16} /> : <X size={16} />} {apiTestResult.message}
           </div>
         )}
       </div>
@@ -294,19 +295,22 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
             className={`theme-button ${theme === 'light' ? 'active' : ''}`}
             onClick={() => setTheme('light')}
           >
-            ☀️ Light
+            <Sun size={16} />
+            <span>Light</span>
           </button>
           <button
             className={`theme-button ${theme === 'dark' ? 'active' : ''}`}
             onClick={() => setTheme('dark')}
           >
-            🌙 Dark
+            <Moon size={16} />
+            <span>Dark</span>
           </button>
           <button
             className={`theme-button ${theme === 'system' ? 'active' : ''}`}
             onClick={() => setTheme('system')}
           >
-            💻 System
+            <Monitor size={16} />
+            <span>System</span>
           </button>
         </div>
       </div>
@@ -346,7 +350,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
         <div className="settings-header">
           <h2>Settings</h2>
           <button className="close-button" onClick={onClose}>
-            ✕
+            <X size={20} />
           </button>
         </div>
 
@@ -381,7 +385,10 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
 
         {/* Footer */}
         <div className="settings-footer">
-          <div className="keyboard-hint">💡 Press ⌘, to open settings</div>
+          <div className="keyboard-hint">
+            <Lightbulb size={14} />
+            <span>Press ⌘, to open settings</span>
+          </div>
           <div className="settings-actions">
             <button className="btn-secondary" onClick={onClose}>
               Cancel

@@ -7,12 +7,24 @@ import type { Highlight, HighlightColor, Selection } from '../types';
 import type { Rendition } from 'epubjs';
 
 const HIGHLIGHT_STYLES: Record<HighlightColor, Record<string, string>> = {
-  yellow: { 'fill': 'rgba(255, 235, 59, 0.35)', 'fill-opacity': '0.35', 'mix-blend-mode': 'multiply' },
-  green:  { 'fill': 'rgba(76, 175, 80, 0.3)', 'fill-opacity': '0.3', 'mix-blend-mode': 'multiply' },
-  blue:   { 'fill': 'rgba(33, 150, 243, 0.25)', 'fill-opacity': '0.25', 'mix-blend-mode': 'multiply' },
-  pink:   { 'fill': 'rgba(233, 30, 99, 0.25)', 'fill-opacity': '0.25', 'mix-blend-mode': 'multiply' },
-  orange: { 'fill': 'rgba(255, 152, 0, 0.3)', 'fill-opacity': '0.3', 'mix-blend-mode': 'multiply' },
+  yellow: { 'fill': 'rgba(255, 235, 59, 0.62)', 'fill-opacity': '0.62' },
+  green:  { 'fill': 'rgba(76, 175, 80, 0.52)', 'fill-opacity': '0.52' },
+  blue:   { 'fill': 'rgba(33, 150, 243, 0.46)', 'fill-opacity': '0.46' },
+  pink:   { 'fill': 'rgba(233, 30, 99, 0.44)', 'fill-opacity': '0.44' },
+  orange: { 'fill': 'rgba(255, 152, 0, 0.56)', 'fill-opacity': '0.56' },
+  // Pen styles use epub.js underline annotations.
+  'pencil': { 'stroke': 'rgba(100, 100, 100, 0.9)', 'stroke-width': '2', 'stroke-linecap': 'round' },
+  'red-pen': { 'stroke': 'rgba(220, 53, 69, 0.95)', 'stroke-width': '2.4', 'stroke-linecap': 'round' },
+  'blue-pen': { 'stroke': 'rgba(13, 110, 253, 0.95)', 'stroke-width': '2.4', 'stroke-linecap': 'round' },
 };
+
+const PEN_COLORS = new Set<HighlightColor>(['pencil', 'red-pen', 'blue-pen']);
+
+const getAnnotationType = (color: HighlightColor): 'highlight' | 'underline' =>
+  PEN_COLORS.has(color) ? 'underline' : 'highlight';
+
+const getAnnotationClassName = (color: HighlightColor): string =>
+  PEN_COLORS.has(color) ? 'epub-underline' : 'epub-highlight';
 
 interface HighlightClickData {
   id: string;
@@ -65,26 +77,6 @@ export function useHighlights(): UseHighlightsReturn {
     currentBookIdRef.current = currentBook?.id || null;
   }, [currentBook?.id]);
 
-  const getIframeOffset = useCallback(() => {
-    const rendition = getEPUBService().getRendition();
-    if (!rendition) return { left: 0, top: 0 };
-
-    const contents = rendition.getContents();
-    if (!contents || (Array.isArray(contents) && contents.length === 0)) {
-      return { left: 0, top: 0 };
-    }
-
-    const content = Array.isArray(contents) ? contents[0] : contents;
-    const doc = content?.document;
-    if (!doc) return { left: 0, top: 0 };
-
-    const frameElement = doc.defaultView?.frameElement as HTMLElement | null;
-    if (!frameElement) return { left: 0, top: 0 };
-
-    const rect = frameElement.getBoundingClientRect();
-    return { left: rect.left, top: rect.top };
-  }, []);
-
   const debouncedSave = useCallback(async (bookId: string, highlightsToSave: Highlight[]) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -103,25 +95,29 @@ export function useHighlights(): UseHighlightsReturn {
     (highlightId: string) => {
       return (event: MouseEvent) => {
         const target = event.target as HTMLElement;
-        const highlightElement = target.closest('.epub-highlight');
+        const highlightElement = target.closest('.epub-highlight, .epub-underline');
         if (!highlightElement) return;
 
         const highlight = highlightsRef.current.find((h) => h.id === highlightId);
         if (!highlight) return;
 
         const rect = highlightElement.getBoundingClientRect();
-        const iframeOffset = getIframeOffset();
+        const ownerDoc = highlightElement.ownerDocument;
+        const frameElement = ownerDoc?.defaultView?.frameElement as HTMLElement | null;
+        const frameRect = frameElement?.getBoundingClientRect();
+        const offsetLeft = frameRect?.left ?? 0;
+        const offsetTop = frameRect?.top ?? 0;
 
         const position = {
-          x: iframeOffset.left + rect.left + rect.width / 2,
-          y: iframeOffset.top + rect.top,
+          x: offsetLeft + rect.left + rect.width / 2,
+          y: offsetTop + rect.bottom,
         };
 
         setActiveHighlight(highlight);
         setActiveHighlightPosition(position);
       };
     },
-    [getIframeOffset]
+    []
   );
 
   const createHighlight = useCallback(
@@ -150,12 +146,14 @@ export function useHighlights(): UseHighlightsReturn {
       if (rendition) {
         const clickHandler = createHighlightClickCallback(highlight.id);
         registeredClickHandlersRef.current.set(highlight.id, clickHandler);
+        const annotationType = getAnnotationType(highlight.color);
+        const annotationClass = getAnnotationClassName(highlight.color);
 
-        rendition.annotations.highlight(
+        rendition.annotations[annotationType](
           highlight.cfi,
           { id: highlight.id } as HighlightClickData,
           clickHandler,
-          'epub-highlight',
+          annotationClass,
           HIGHLIGHT_STYLES[highlight.color]
         );
       }
@@ -167,10 +165,15 @@ export function useHighlights(): UseHighlightsReturn {
     [currentBook, addHighlight, debouncedSave, createHighlightClickCallback]
   );
 
-  const removeHighlightFromRendition = useCallback((cfi: string, highlightId?: string) => {
+  const removeHighlightFromRendition = useCallback((cfi: string, type?: 'highlight' | 'underline', highlightId?: string) => {
     const rendition = getEPUBService().getRendition();
     if (rendition) {
-      rendition.annotations.remove(cfi, 'highlight');
+      if (type) {
+        rendition.annotations.remove(cfi, type);
+      } else {
+        rendition.annotations.remove(cfi, 'highlight');
+        rendition.annotations.remove(cfi, 'underline');
+      }
     }
     if (highlightId) {
       registeredClickHandlersRef.current.delete(highlightId);
@@ -185,18 +188,20 @@ export function useHighlights(): UseHighlightsReturn {
       storeUpdateHighlight(id, { ...updates, updatedAt: Date.now() });
 
       if (updates.color && updates.color !== highlight.color) {
-        removeHighlightFromRendition(highlight.cfi, highlight.id);
+        removeHighlightFromRendition(highlight.cfi, getAnnotationType(highlight.color), highlight.id);
 
         const rendition = getEPUBService().getRendition();
         if (rendition) {
           const clickHandler = createHighlightClickCallback(highlight.id);
           registeredClickHandlersRef.current.set(highlight.id, clickHandler);
+          const annotationType = getAnnotationType(updates.color);
+          const annotationClass = getAnnotationClassName(updates.color);
 
-          rendition.annotations.highlight(
+          rendition.annotations[annotationType](
             highlight.cfi,
             { id: highlight.id } as HighlightClickData,
             clickHandler,
-            'epub-highlight',
+            annotationClass,
             HIGHLIGHT_STYLES[updates.color]
           );
         }
@@ -215,7 +220,7 @@ export function useHighlights(): UseHighlightsReturn {
       const highlight = highlightsRef.current.find((h) => h.id === id);
       if (!highlight || !currentBook) return;
 
-      removeHighlightFromRendition(highlight.cfi, highlight.id);
+      removeHighlightFromRendition(highlight.cfi, getAnnotationType(highlight.color), highlight.id);
       storeRemoveHighlight(id);
 
       const updatedHighlights = highlightsRef.current.filter((h) => h.id !== id);
@@ -234,7 +239,7 @@ export function useHighlights(): UseHighlightsReturn {
 
     bookHighlights.forEach((highlight) => {
       try {
-        rendition.annotations.remove(highlight.cfi, 'highlight');
+        rendition.annotations.remove(highlight.cfi, getAnnotationType(highlight.color));
       } catch {
         // Annotation might not exist yet
       }
@@ -246,12 +251,14 @@ export function useHighlights(): UseHighlightsReturn {
       try {
         const clickHandler = createHighlightClickCallback(highlight.id);
         registeredClickHandlersRef.current.set(highlight.id, clickHandler);
+        const annotationType = getAnnotationType(highlight.color);
+        const annotationClass = getAnnotationClassName(highlight.color);
 
-        rendition.annotations.highlight(
+        rendition.annotations[annotationType](
           highlight.cfi,
           { id: highlight.id } as HighlightClickData,
           clickHandler,
-          'epub-highlight',
+          annotationClass,
           HIGHLIGHT_STYLES[highlight.color]
         );
       } catch (error) {

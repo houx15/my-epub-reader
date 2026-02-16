@@ -1,3 +1,4 @@
+import { BookOpen } from '../Icons';
 import type { Chapter } from '../../types';
 import './StatusBar.css';
 
@@ -6,6 +7,7 @@ interface StatusBarProps {
   totalChapters: number;
   currentChapterIndex: number;
   progress: number;
+  onOpenTOC?: () => void;
 }
 
 export function StatusBar({
@@ -13,6 +15,7 @@ export function StatusBar({
   totalChapters,
   currentChapterIndex,
   progress,
+  onOpenTOC,
 }: StatusBarProps) {
   const progressPercentage = Math.round(progress * 100);
 
@@ -20,9 +23,14 @@ export function StatusBar({
     <div className="status-bar">
       <div className="status-section status-left">
         {currentChapter ? (
-          <span className="chapter-name" title={currentChapter.title}>
-            📖 {currentChapter.title}
-          </span>
+          <button
+            className="chapter-name chapter-jump-btn"
+            title="Jump to chapter list (Cmd/Ctrl+J)"
+            onClick={onOpenTOC}
+          >
+            <BookOpen size={14} />
+            {currentChapter.title}
+          </button>
         ) : (
           <span className="status-placeholder">No chapter</span>
         )}

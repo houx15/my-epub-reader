@@ -2,6 +2,14 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.color-picker-separator {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 4px;
 }
 
 .color-picker--small {
@@ -37,6 +45,23 @@
 .color-picker-dot--selected {
   border-color: #333;
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.color-picker-dot--pen {
+  background: transparent;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-picker-dot--pen:hover {
+  border-color: var(--text-secondary);
+}
+
+.color-picker-dot--pen.color-picker-dot--selected {
+  border-color: var(--text-primary);
+  background: var(--bg-secondary);
 }
 
 [data-theme="dark"] .color-picker-dot--selected {

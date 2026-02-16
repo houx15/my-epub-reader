@@ -29,7 +29,7 @@ export interface Selection {
   timestamp: number;
 }
 
-export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink' | 'orange';
+export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink' | 'orange' | 'pencil' | 'red-pen' | 'blue-pen';
 
 export interface Highlight {
   id: string;
@@ -48,7 +48,15 @@ export interface TypographySettings {
   fontFamily: string;          // e.g. 'Georgia', 'system-ui', 'Merriweather'
   fontSize: number;            // in px, 14-28
   lineHeight: number;          // multiplier, 1.4-2.2
+  paragraphSpacing: number;    // in em, 0.5-2.0
   backgroundColor: string;    // hex color for reading background
+  // CJK specific settings
+  cjkFontFamily?: string;      // CJK font family override
+  cjkLetterSpacing?: number;   // letter spacing for CJK in em, 0-0.3
+  cjkAutoSpace?: boolean;      // auto add spaces between CJK and Latin
+  // Layout settings
+  textAlign: 'justify' | 'left';  // text alignment
+  maxWidth?: number;           // max content width in characters
 }
 
 export type PanelMode = 'reading' | 'notebook' | 'ai';

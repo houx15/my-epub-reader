@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { BookOpen, Type, NotebookPen, MessageSquare, Settings } from '../Icons';
 import { TypographyPopover } from '../Typography/TypographyPopover';
 import type { TypographySettings, PanelMode } from '../../types';
 import './Toolbar.css';
@@ -32,8 +33,9 @@ export function Toolbar({
   return (
     <div className="toolbar">
       <div className="toolbar-left">
-        <button className="btn-primary" onClick={onOpenFile} title="Open EPUB file">
-          📖 Open
+        <button className="btn-primary toolbar-btn" onClick={onOpenFile} title="Open EPUB file">
+          <BookOpen size={18} />
+          <span>Open</span>
         </button>
         {bookTitle && <h2 className="book-title truncate">{bookTitle}</h2>}
       </div>
@@ -46,7 +48,7 @@ export function Toolbar({
           disabled={!hasBook}
           title="Typography settings"
         >
-          Aa
+          <Type size={18} />
         </button>
         <TypographyPopover
           isOpen={isTypographyOpen}
@@ -62,7 +64,7 @@ export function Toolbar({
           disabled={!hasBook}
           title="Toggle notebook (Cmd+B)"
         >
-          📓
+          <NotebookPen size={18} />
         </button>
 
         <button
@@ -71,7 +73,7 @@ export function Toolbar({
           disabled={!hasBook}
           title="Toggle AI assistant (Cmd+/)"
         >
-          💬
+          <MessageSquare size={18} />
         </button>
 
         <button
@@ -79,7 +81,7 @@ export function Toolbar({
           onClick={onOpenSettings}
           title="Settings"
         >
-          ⚙️
+          <Settings size={18} />
         </button>
       </div>
     </div>

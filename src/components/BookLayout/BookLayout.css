@@ -1,202 +1,568 @@
+/* BookLayout.css - Realistic Book Design */
+
 .book-layout {
   display: flex;
   flex-direction: column;
   height: calc(100vh - var(--toolbar-height) - var(--statusbar-height));
-  background-color: var(--bg-secondary);
+  background: linear-gradient(135deg, #2c2416 0%, #3d3220 50%, #2c2416 100%);
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 24px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Wood texture background effect */
+.book-layout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+  pointer-events: none;
 }
 
 .book-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  max-width: 1200px;
   width: 100%;
-  perspective: 1200px;
+  max-width: 1400px;
+  height: 100%;
+  perspective: 2500px;
+  position: relative;
 }
 
+/* Book spread wrapper with 3D context */
 .book-spread-wrapper {
   display: flex;
   position: relative;
   flex: 1;
-  max-width: 900px;
+  max-width: 1200px;
+  height: calc(100% - 60px);
+  transform-style: preserve-3d;
 }
 
-.book-page {
-  position: relative;
-  pointer-events: none;
-}
-
-.book-page-left {
-  flex-shrink: 0;
-  width: 20px;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent);
-  border-top-left-radius: 4px;
-  border-bottom-left-radius: 4px;
-}
-
-.book-page-right {
-  flex-shrink: 0;
-  width: 20px;
-  background: linear-gradient(to left, rgba(0, 0, 0, 0.1), transparent);
-  border-top-right-radius: 4px;
-  border-bottom-right-radius: 4px;
-}
-
+/* The main book spread - the reading area */
 .book-spread {
   flex: 1;
-  min-height: calc(100vh - var(--toolbar-height) - var(--statusbar-height) - 80px);
-  background: linear-gradient(to right, #faf8f5 0%, #fffef9 50%, #faf8f5 100%);
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    #f8f6f0 0%,
+    #fffcf5 3%,
+    #fefcf7 48%,
+    #fdf9ef 50%,
+    #fefcf7 52%,
+    #fffcf5 97%,
+    #f8f6f0 100%
+  );
+  border-radius: 4px 8px 8px 4px;
   box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.15),
-    0 2px 8px rgba(0, 0, 0, 0.1),
-    inset 0 0 60px rgba(0, 0, 0, 0.02);
+    /* Deep shadow for book thickness */
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    /* Inner shadow for page depth */
+    inset -30px 0 60px rgba(0, 0, 0, 0.05),
+    inset 30px 0 60px rgba(0, 0, 0, 0.03),
+    /* Spine shadow */
+    inset 0 0 0 1px rgba(0, 0, 0, 0.1);
   cursor: text;
   position: relative;
   overflow: hidden;
+  transform-style: preserve-3d;
+  transform-origin: center center;
 }
 
-.book-spread::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 30%;
-  cursor: w-resize;
-  z-index: 10;
-}
-
+/* Paper texture overlay */
 .book-spread::after {
   content: '';
   position: absolute;
-  right: 0;
   top: 0;
+  left: 0;
+  right: 0;
   bottom: 0;
-  width: 30%;
-  cursor: e-resize;
-  z-index: 10;
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  mix-blend-mode: multiply;
 }
 
+/* Left page decorative edge */
+.book-page-left {
+  flex-shrink: 0;
+  width: 35px;
+  height: calc(100% - 8px);
+  margin-top: 4px;
+  background: linear-gradient(
+    to right,
+    #e8e4d9 0%,
+    #f0ece0 20%,
+    #f5f1e8 50%,
+    #f8f4eb 80%,
+    #faf6f0 100%
+  );
+  border-radius: 6px 2px 2px 6px;
+  box-shadow: 
+    -3px 0 8px rgba(0, 0, 0, 0.2),
+    inset -2px 0 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transform: translateZ(-5px);
+}
+
+/* Page edge lines effect for left page */
+.book-page-left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 3px
+  );
+  border-radius: 6px 2px 2px 6px;
+}
+
+/* Right page decorative edge */
+.book-page-right {
+  flex-shrink: 0;
+  width: 35px;
+  height: calc(100% - 8px);
+  margin-top: 4px;
+  background: linear-gradient(
+    to left,
+    #e8e4d9 0%,
+    #f0ece0 20%,
+    #f5f1e8 50%,
+    #f8f4eb 80%,
+    #faf6f0 100%
+  );
+  border-radius: 2px 6px 6px 2px;
+  box-shadow: 
+    3px 0 8px rgba(0, 0, 0, 0.2),
+    inset 2px 0 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transform: translateZ(-5px);
+}
+
+/* Page edge lines effect for right page */
+.book-page-right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 3px
+  );
+  border-radius: 2px 6px 6px 2px;
+}
+
+/* The central spine - more realistic */
 .book-spine {
   position: absolute;
   left: 50%;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 40px;
   transform: translateX(-50%);
   background: linear-gradient(
     to right,
-    rgba(139, 90, 43, 0.3),
-    rgba(139, 90, 43, 0.6),
-    rgba(139, 90, 43, 0.3)
+    transparent 0%,
+    rgba(139, 90, 43, 0.1) 20%,
+    rgba(139, 90, 43, 0.25) 45%,
+    rgba(101, 67, 33, 0.35) 50%,
+    rgba(139, 90, 43, 0.25) 55%,
+    rgba(139, 90, 43, 0.1) 80%,
+    transparent 100%
   );
+  z-index: 10;
+  pointer-events: none;
   box-shadow: 
-    -2px 0 4px rgba(0, 0, 0, 0.1),
-    2px 0 4px rgba(0, 0, 0, 0.1);
+    inset 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Spine highlight */
+.book-spine::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(139, 90, 43, 0.2) 10%,
+    rgba(139, 90, 43, 0.3) 50%,
+    rgba(139, 90, 43, 0.2) 90%,
+    transparent 100%
+  );
+}
+
+/* Click zones for navigation - invisible overlays */
+.book-spread::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
   z-index: 5;
   pointer-events: none;
 }
 
+/* Navigation click areas */
+.book-spread.click-prev,
+.book-spread.click-next {
+  cursor: pointer;
+}
+
+.book-spread.click-prev {
+  cursor: w-resize;
+}
+
+.book-spread.click-next {
+  cursor: e-resize;
+}
+
+/* Page stacks - visual thickness indicators */
 .page-stack {
-  height: 100%;
-  min-height: calc(100vh - var(--toolbar-height) - var(--statusbar-height) - 80px);
-  background: linear-gradient(
-    to bottom,
-    #f5f5f0 0%,
-    #e8e8e3 5%,
-    #f5f5f0 10%,
-    #e8e8e3 15%,
-    #f5f5f0 20%,
-    #e8e8e3 25%,
-    #f5f5f0 30%,
-    #e8e8e3 35%,
-    #f5f5f0 40%,
-    #e8e8e3 45%,
-    #f5f5f0 50%,
-    #e8e8e3 55%,
-    #f5f5f0 60%,
-    #e8e8e3 65%,
-    #f5f5f0 70%,
-    #e8e8e3 75%,
-    #f5f5f0 80%,
-    #e8e8e3 85%,
-    #f5f5f0 90%,
-    #e8e8e3 95%,
-    #f5f5f0 100%
-  );
-  box-shadow: 
-    inset 0 0 3px rgba(0, 0, 0, 0.1),
-    0 0 2px rgba(0, 0, 0, 0.05);
-  border-radius: 2px;
-  transition: width 0.3s ease;
+  height: calc(100% - 20px);
+  margin-top: 10px;
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  transform-style: preserve-3d;
 }
 
 .page-stack-left {
-  margin-right: 8px;
-  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  margin-right: -15px;
+  background: linear-gradient(
+    to right,
+    #d4d0c5 0%,
+    #ddd9ce 10%,
+    #e5e1d6 30%,
+    #ebe7dc 50%,
+    #f0ece0 80%,
+    #f5f1e8 100%
+  );
+  border-radius: 4px 2px 2px 4px;
+  box-shadow: 
+    -4px 4px 12px rgba(0, 0, 0, 0.25),
+    -2px 0 6px rgba(0, 0, 0, 0.15),
+    inset -3px 0 6px rgba(0, 0, 0, 0.1);
+  transform: rotateY(-5deg) translateZ(-10px);
+  transform-origin: right center;
+}
+
+/* Page lines on left stack */
+.page-stack-left::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.04) 3px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+  border-radius: 4px 2px 2px 4px;
 }
 
 .page-stack-right {
-  margin-left: 8px;
-  border-left: 1px solid rgba(0, 0, 0, 0.05);
+  margin-left: -15px;
+  background: linear-gradient(
+    to left,
+    #d4d0c5 0%,
+    #ddd9ce 10%,
+    #e5e1d6 30%,
+    #ebe7dc 50%,
+    #f0ece0 80%,
+    #f5f1e8 100%
+  );
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 
+    4px 4px 12px rgba(0, 0, 0, 0.25),
+    2px 0 6px rgba(0, 0, 0, 0.15),
+    inset 3px 0 6px rgba(0, 0, 0, 0.1);
+  transform: rotateY(5deg) translateZ(-10px);
+  transform-origin: left center;
 }
 
+/* Page lines on right stack */
+.page-stack-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.04) 3px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+  border-radius: 2px 4px 4px 2px;
+}
+
+/* ==============================
+   PAGE TURN ANIMATIONS
+   ============================== */
+
+/* Forward page turn (next page) */
 .book-spread.turning-forward {
-  animation: page-turn-forward 0.4s ease-out;
+  animation: page-turn-forward 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Backward page turn (previous page) */
 .book-spread.turning-backward {
-  animation: page-turn-backward 0.4s ease-out;
+  animation: page-turn-backward 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes page-turn-forward {
-  0% { 
-    transform: perspective(1200px) rotateY(0deg); 
-    opacity: 1; 
+  0% {
+    transform: perspective(2500px) rotateY(0deg) scale(1);
+    opacity: 1;
   }
-  40% { 
-    transform: perspective(1200px) rotateY(-3deg); 
-    opacity: 0.85; 
+  20% {
+    transform: perspective(2500px) rotateY(-2deg) scale(0.99);
+    opacity: 0.95;
+    box-shadow: 
+      0 25px 70px rgba(0, 0, 0, 0.5),
+      0 30px 40px rgba(0, 0, 0, 0.3);
   }
-  100% { 
-    transform: perspective(1200px) rotateY(0deg); 
-    opacity: 1; 
+  50% {
+    transform: perspective(2500px) rotateY(-8deg) scale(0.97);
+    opacity: 0.9;
+    box-shadow: 
+      -20px 30px 80px rgba(0, 0, 0, 0.4),
+      -10px 20px 50px rgba(0, 0, 0, 0.3);
+  }
+  80% {
+    transform: perspective(2500px) rotateY(-3deg) scale(0.99);
+    opacity: 0.95;
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.4),
+      0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  100% {
+    transform: perspective(2500px) rotateY(0deg) scale(1);
+    opacity: 1;
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.4),
+      0 8px 24px rgba(0, 0, 0, 0.3),
+      inset -30px 0 60px rgba(0, 0, 0, 0.05),
+      inset 30px 0 60px rgba(0, 0, 0, 0.03);
   }
 }
 
 @keyframes page-turn-backward {
-  0% { 
-    transform: perspective(1200px) rotateY(0deg); 
-    opacity: 1; 
+  0% {
+    transform: perspective(2500px) rotateY(0deg) scale(1);
+    opacity: 1;
   }
-  40% { 
-    transform: perspective(1200px) rotateY(3deg); 
-    opacity: 0.85; 
+  20% {
+    transform: perspective(2500px) rotateY(2deg) scale(0.99);
+    opacity: 0.95;
+    box-shadow: 
+      0 25px 70px rgba(0, 0, 0, 0.5),
+      0 30px 40px rgba(0, 0, 0, 0.3);
   }
-  100% { 
-    transform: perspective(1200px) rotateY(0deg); 
-    opacity: 1; 
+  50% {
+    transform: perspective(2500px) rotateY(8deg) scale(0.97);
+    opacity: 0.9;
+    box-shadow: 
+      20px 30px 80px rgba(0, 0, 0, 0.4),
+      10px 20px 50px rgba(0, 0, 0, 0.3);
+  }
+  80% {
+    transform: perspective(2500px) rotateY(3deg) scale(0.99);
+    opacity: 0.95;
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.4),
+      0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  100% {
+    transform: perspective(2500px) rotateY(0deg) scale(1);
+    opacity: 1;
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.4),
+      0 8px 24px rgba(0, 0, 0, 0.3),
+      inset -30px 0 60px rgba(0, 0, 0, 0.05),
+      inset 30px 0 60px rgba(0, 0, 0, 0.03);
   }
 }
 
-@media (max-width: 768px) {
+/* Page curl effect during animation */
+.book-spread.turning-forward::before,
+.book-spread.turning-backward::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(0, 0, 0, 0.1)
+  );
+  z-index: 20;
+  pointer-events: none;
+}
+
+.book-spread.turning-forward::before {
+  right: 0;
+}
+
+.book-spread.turning-backward::before {
+  left: 0;
+  transform: scaleX(-1);
+}
+
+/* ==============================
+   RESPONSIVE DESIGN
+   ============================== */
+
+@media (max-width: 1024px) {
   .book-layout {
-    padding: 10px;
+    padding: 16px 24px;
   }
 
-  .book-container {
+  .book-spread-wrapper {
     max-width: 100%;
   }
 
   .book-page-left,
   .book-page-right {
-    width: 10px;
+    width: 25px;
+  }
+
+  .page-stack-left {
+    margin-right: -10px;
+  }
+
+  .page-stack-right {
+    margin-left: -10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .book-layout {
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+  }
+
+  .book-layout::before {
+    display: none;
+  }
+
+  .book-container {
+    perspective: none;
+  }
+
+  .book-spread-wrapper {
+    height: 100%;
+  }
+
+  .book-spread {
+    border-radius: 4px;
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.15),
+      0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .book-page-left,
+  .book-page-right {
+    display: none;
   }
 
   .page-stack {
     display: none;
+  }
+
+  .book-spine {
+    display: none;
+  }
+
+  /* Disable animations on mobile */
+  .book-spread.turning-forward,
+  .book-spread.turning-backward {
+    animation: none;
+  }
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .book-layout {
+  background: linear-gradient(135deg, #1a1612 0%, #252018 50%, #1a1612 100%);
+}
+
+[data-theme="dark"] .book-spread {
+  background: linear-gradient(
+    to right,
+    #2a2824 0%,
+    #32302c 3%,
+    #353330 48%,
+    #373532 50%,
+    #353330 52%,
+    #32302c 97%,
+    #2a2824 100%
+  );
+}
+
+[data-theme="dark"] .book-page-left {
+  background: linear-gradient(
+    to right,
+    #252320 0%,
+    #2a2824 20%,
+    #2d2b28 50%,
+    #302e2a 80%,
+    #32302c 100%
+  );
+}
+
+[data-theme="dark"] .book-page-right {
+  background: linear-gradient(
+    to left,
+    #252320 0%,
+    #2a2824 20%,
+    #2d2b28 50%,
+    #302e2a 80%,
+    #32302c 100%
+  );
+}
+
+/* High DPI screen adjustments */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .book-spread::after {
+    opacity: 0.02;
   }
 }
