@@ -4,10 +4,12 @@
   display: flex;
   flex-direction: column;
   height: calc(100vh - var(--toolbar-height) - var(--statusbar-height));
-  background: linear-gradient(135deg, #2c2416 0%, #3d3220 50%, #2c2416 100%);
+  background:
+    radial-gradient(circle at 50% 42%, var(--scene-light-center) 0%, transparent 55%),
+    linear-gradient(140deg, var(--scene-bg-base) 0%, var(--scene-bg-mid) 52%, var(--scene-bg-edge) 100%);
   align-items: center;
   justify-content: center;
-  padding: 24px 40px;
+  padding: var(--scene-padding-y) var(--scene-padding-x);
   position: relative;
   overflow: hidden;
 }
@@ -25,9 +27,17 @@
       90deg,
       transparent,
       transparent 2px,
-      rgba(0, 0, 0, 0.03) 2px,
-      rgba(0, 0, 0, 0.03) 4px
+      rgba(0, 0, 0, var(--scene-grain-opacity)) 2px,
+      rgba(0, 0, 0, var(--scene-grain-opacity)) 4px
     );
+  pointer-events: none;
+}
+
+.book-layout::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 48%, var(--scene-light-corner) 100%);
   pointer-events: none;
 }
 
@@ -36,7 +46,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 1400px;
+  max-width: min(96vw, 1520px);
   height: 100%;
   perspective: 2500px;
   position: relative;
@@ -47,8 +57,9 @@
   display: flex;
   position: relative;
   flex: 1;
-  max-width: 1200px;
-  height: calc(100% - 60px);
+  max-width: clamp(860px, 78vw, 1160px);
+  height: calc(100% - clamp(56px, 8vh, 92px));
+  min-height: min(76vh, 780px);
   transform-style: preserve-3d;
 }
 
@@ -58,22 +69,22 @@
   height: 100%;
   background: linear-gradient(
     to right,
-    #f8f6f0 0%,
-    #fffcf5 3%,
-    #fefcf7 48%,
-    #fdf9ef 50%,
-    #fefcf7 52%,
-    #fffcf5 97%,
-    #f8f6f0 100%
+    var(--book-paper-mid) 0%,
+    var(--book-paper-light) 3%,
+    #fdfaf0 48%,
+    var(--book-paper-dark) 50%,
+    #fdfaf0 52%,
+    var(--book-paper-light) 97%,
+    var(--book-paper-mid) 100%
   );
-  border-radius: 4px 8px 8px 4px;
+  border-radius: 6px 12px 12px 6px;
   box-shadow: 
     /* Deep shadow for book thickness */
-    0 20px 60px rgba(0, 0, 0, 0.4),
-    0 8px 24px rgba(0, 0, 0, 0.3),
+    0 20px 60px var(--book-shadow-deep),
+    0 8px 24px var(--book-shadow-soft),
     /* Inner shadow for page depth */
-    inset -30px 0 60px rgba(0, 0, 0, 0.05),
-    inset 30px 0 60px rgba(0, 0, 0, 0.03),
+    inset -30px 0 60px var(--book-inner-shadow-right),
+    inset 30px 0 60px var(--book-inner-shadow-left),
     /* Spine shadow */
     inset 0 0 0 1px rgba(0, 0, 0, 0.1);
   cursor: text;
@@ -101,9 +112,9 @@
 /* Left page decorative edge */
 .book-page-left {
   flex-shrink: 0;
-  width: 35px;
-  height: calc(100% - 8px);
-  margin-top: 4px;
+  width: clamp(20px, 2.7vw, 34px);
+  height: calc(100% - 10px);
+  margin-top: 5px;
   background: linear-gradient(
     to right,
     #e8e4d9 0%,
@@ -141,9 +152,9 @@
 /* Right page decorative edge */
 .book-page-right {
   flex-shrink: 0;
-  width: 35px;
-  height: calc(100% - 8px);
-  margin-top: 4px;
+  width: clamp(20px, 2.7vw, 34px);
+  height: calc(100% - 10px);
+  margin-top: 5px;
   background: linear-gradient(
     to left,
     #e8e4d9 0%,
@@ -184,16 +195,16 @@
   left: 50%;
   top: 0;
   bottom: 0;
-  width: 40px;
+  width: clamp(30px, 3vw, 42px);
   transform: translateX(-50%);
   background: linear-gradient(
     to right,
     transparent 0%,
-    rgba(139, 90, 43, 0.1) 20%,
-    rgba(139, 90, 43, 0.25) 45%,
-    rgba(101, 67, 33, 0.35) 50%,
-    rgba(139, 90, 43, 0.25) 55%,
-    rgba(139, 90, 43, 0.1) 80%,
+    var(--book-spine-light) 20%,
+    var(--book-spine-mid) 45%,
+    var(--book-spine-dark) 50%,
+    var(--book-spine-mid) 55%,
+    var(--book-spine-light) 80%,
     transparent 100%
   );
   z-index: 10;
@@ -250,8 +261,8 @@
 
 /* Page stacks - visual thickness indicators */
 .page-stack {
-  height: calc(100% - 20px);
-  margin-top: 10px;
+  height: calc(100% - 28px);
+  margin-top: 14px;
   border-radius: 3px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -259,7 +270,7 @@
 }
 
 .page-stack-left {
-  margin-right: -15px;
+  margin-right: -12px;
   background: linear-gradient(
     to right,
     #d4d0c5 0%,
@@ -297,7 +308,7 @@
 }
 
 .page-stack-right {
-  margin-left: -15px;
+  margin-left: -12px;
   background: linear-gradient(
     to left,
     #d4d0c5 0%,
@@ -340,12 +351,12 @@
 
 /* Forward page turn (next page) */
 .book-spread.turning-forward {
-  animation: page-turn-forward 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: page-turn-forward var(--motion-page-turn-duration) var(--motion-page-turn-ease);
 }
 
 /* Backward page turn (previous page) */
 .book-spread.turning-backward {
-  animation: page-turn-backward 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: page-turn-backward var(--motion-page-turn-duration) var(--motion-page-turn-ease);
 }
 
 @keyframes page-turn-forward {
@@ -463,7 +474,7 @@
 
   .book-page-left,
   .book-page-right {
-    width: 25px;
+    width: 20px;
   }
 
   .page-stack-left {
@@ -478,11 +489,13 @@
 @media (max-width: 768px) {
   .book-layout {
     padding: 12px 16px;
-    background: var(--bg-secondary);
+    background:
+      radial-gradient(circle at 50% 42%, var(--scene-light-center) 0%, transparent 62%),
+      linear-gradient(140deg, var(--scene-bg-base) 0%, var(--scene-bg-mid) 52%, var(--scene-bg-edge) 100%);
   }
 
   .book-layout::before {
-    display: none;
+    opacity: 0.45;
   }
 
   .book-container {
@@ -518,46 +531,6 @@
   .book-spread.turning-backward {
     animation: none;
   }
-}
-
-/* Dark mode adjustments */
-[data-theme="dark"] .book-layout {
-  background: linear-gradient(135deg, #1a1612 0%, #252018 50%, #1a1612 100%);
-}
-
-[data-theme="dark"] .book-spread {
-  background: linear-gradient(
-    to right,
-    #2a2824 0%,
-    #32302c 3%,
-    #353330 48%,
-    #373532 50%,
-    #353330 52%,
-    #32302c 97%,
-    #2a2824 100%
-  );
-}
-
-[data-theme="dark"] .book-page-left {
-  background: linear-gradient(
-    to right,
-    #252320 0%,
-    #2a2824 20%,
-    #2d2b28 50%,
-    #302e2a 80%,
-    #32302c 100%
-  );
-}
-
-[data-theme="dark"] .book-page-right {
-  background: linear-gradient(
-    to left,
-    #252320 0%,
-    #2a2824 20%,
-    #2d2b28 50%,
-    #302e2a 80%,
-    #32302c 100%
-  );
 }
 
 /* High DPI screen adjustments */

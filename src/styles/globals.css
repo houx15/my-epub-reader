@@ -35,6 +35,31 @@
   /* Layout */
   --toolbar-height: 60px;
   --statusbar-height: 30px;
+
+  /* Real-book scene tokens (Warm Desk) */
+  --scene-bg-base: #3f2f1f;
+  --scene-bg-mid: #2f2419;
+  --scene-bg-edge: #201810;
+  --scene-light-center: rgba(255, 240, 208, 0.15);
+  --scene-light-corner: rgba(0, 0, 0, 0.26);
+  --scene-grain-opacity: 0.035;
+
+  --book-paper-light: #fffdf6;
+  --book-paper-mid: #f6f1e6;
+  --book-paper-dark: #ebe3d2;
+  --book-shadow-deep: rgba(0, 0, 0, 0.38);
+  --book-shadow-soft: rgba(0, 0, 0, 0.18);
+  --book-inner-shadow-left: rgba(0, 0, 0, 0.04);
+  --book-inner-shadow-right: rgba(0, 0, 0, 0.07);
+  --book-spine-dark: rgba(95, 63, 34, 0.34);
+  --book-spine-mid: rgba(124, 84, 48, 0.2);
+  --book-spine-light: rgba(165, 119, 76, 0.12);
+
+  --scene-padding-y: clamp(16px, 3vh, 30px);
+  --scene-padding-x: clamp(20px, 3vw, 44px);
+
+  --motion-page-turn-duration: 340ms;
+  --motion-page-turn-ease: cubic-bezier(0.25, 0.75, 0.2, 1);
 }
 
 /* Dark theme */
@@ -51,6 +76,25 @@
   --success-color: #198754;
   --error-color: #dc3545;
   --warning-color: #ffc107;
+
+  /* Keep book scene warm and readable in dark UI mode */
+  --scene-bg-base: #2f261d;
+  --scene-bg-mid: #241d16;
+  --scene-bg-edge: #18120d;
+  --scene-light-center: rgba(255, 236, 198, 0.1);
+  --scene-light-corner: rgba(0, 0, 0, 0.34);
+  --scene-grain-opacity: 0.03;
+
+  --book-paper-light: #f7f3e9;
+  --book-paper-mid: #eee6d6;
+  --book-paper-dark: #e1d6c2;
+  --book-shadow-deep: rgba(0, 0, 0, 0.46);
+  --book-shadow-soft: rgba(0, 0, 0, 0.25);
+  --book-inner-shadow-left: rgba(0, 0, 0, 0.06);
+  --book-inner-shadow-right: rgba(0, 0, 0, 0.09);
+  --book-spine-dark: rgba(85, 58, 32, 0.42);
+  --book-spine-mid: rgba(115, 79, 46, 0.26);
+  --book-spine-light: rgba(151, 111, 73, 0.14);
 }
 
 /* Base styles */
