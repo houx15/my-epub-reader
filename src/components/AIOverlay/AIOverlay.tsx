@@ -1,5 +1,19 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { marked } from 'marked';
+import {
+  AlertTriangle,
+  Bot,
+  FileText,
+  History,
+  Loader2,
+  MessageSquare,
+  Plus,
+  SendHorizontal,
+  Sparkles,
+  Trash2,
+  UserRound,
+  X,
+} from 'lucide-react';
 import { useLLM } from '../../hooks/useLLM';
 import type { Selection } from '../../types';
 import './AIOverlay.css';
@@ -165,14 +179,17 @@ export function AIOverlay({
         aria-hidden={!isOpen}
       >
         <div className="ai-overlay-header">
-          <h3>AI Assistant</h3>
+          <h3>
+            <Sparkles size={16} aria-hidden="true" />
+            AI Assistant
+          </h3>
           <div className="ai-header-actions">
             <button
               onClick={() => setIsSessionsOpen((prev) => !prev)}
               className="ai-history-button"
               title="Chat history"
             >
-              🕘
+              <History size={16} aria-hidden="true" />
             </button>
             {messages.length > 0 && (
               <button
@@ -181,11 +198,11 @@ export function AIOverlay({
                 disabled={isLoading}
                 title="Clear conversation"
               >
-                🗑️
+                <Trash2 size={16} aria-hidden="true" />
               </button>
             )}
             <button onClick={onClose} className="ai-close-button" aria-label="Close AI Overlay">
-              ✕
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -208,7 +225,7 @@ export function AIOverlay({
                 disabled={isLoading}
                 title="Start a new chat"
               >
-                ＋
+                <Plus size={14} aria-hidden="true" />
               </button>
             </div>
             <div className="ai-sessions-list">
@@ -238,7 +255,10 @@ export function AIOverlay({
         <div className="ai-messages">
           {messages.length === 0 && (
             <div className="ai-empty-state">
-              <p>💬 Start a conversation about your reading</p>
+              <p>
+                <MessageSquare size={28} aria-hidden="true" />
+                <span>Start a conversation about your reading</span>
+              </p>
               <p className="ai-hint">
                 {selectionForDisplay
                   ? 'Ask questions about the selected text'
@@ -249,7 +269,13 @@ export function AIOverlay({
 
           {messages.map((message, index) => (
             <div key={index} className={`ai-message ai-message-${message.role}`}>
-              <div className="ai-message-avatar">{message.role === 'user' ? '👤' : '🤖'}</div>
+              <div className="ai-message-avatar">
+                {message.role === 'user' ? (
+                  <UserRound size={18} aria-hidden="true" />
+                ) : (
+                  <Bot size={18} aria-hidden="true" />
+                )}
+              </div>
               <div className="ai-message-content">
                 {renderMessageContent(message.content, message.role === 'assistant')}
                 <div className="ai-message-timestamp">
@@ -261,7 +287,9 @@ export function AIOverlay({
 
           {isLoading && (
             <div className="ai-message ai-message-assistant">
-              <div className="ai-message-avatar">🤖</div>
+              <div className="ai-message-avatar">
+                <Bot size={18} aria-hidden="true" />
+              </div>
               <div className="ai-message-content">
                 <div className="ai-typing-indicator">
                   <span></span>
@@ -274,9 +302,12 @@ export function AIOverlay({
 
           {error && (
             <div className="ai-error-message">
-              <span>⚠️ {error.message}</span>
+              <span>
+                <AlertTriangle size={14} aria-hidden="true" />
+                {error.message}
+              </span>
               <button onClick={clearError} className="ai-dismiss-error">
-                ✕
+                <X size={14} aria-hidden="true" />
               </button>
             </div>
           )}
@@ -292,7 +323,8 @@ export function AIOverlay({
               className="ai-summarize-button"
               title="Summarize this conversation and add to notes"
             >
-              📝 Summarize to Notes
+              <FileText size={15} aria-hidden="true" />
+              Summarize to Notes
             </button>
           </div>
         )}
@@ -318,7 +350,7 @@ export function AIOverlay({
             className="ai-send-button"
             aria-label="Send message"
           >
-            {isLoading ? '⏳' : '📤'}
+            {isLoading ? <Loader2 size={20} className="ai-send-spinner" aria-hidden="true" /> : <SendHorizontal size={20} aria-hidden="true" />}
           </button>
         </div>
       </div>

@@ -17,9 +17,29 @@ import { useHighlights } from './hooks/useHighlights';
 import { useSelection } from './hooks/useSelection';
 import { useAppStore } from './stores/appStore';
 import { getEPUBService } from './services/epub';
+import { getLLMService } from './services/llm';
 import { getStorageService } from './services/storage';
 import { insertSummaryAfterSelection, stripMarkdownForExport, updateLastModifiedDate } from './services/noteUtils';
-import type { Highlight, HighlightColor } from './types';
+import type { Highlight, HighlightColor, ChatMessage } from './types';
+
+const END_WRITE_START = '<!-- end-write:start -->';
+const END_WRITE_END = '<!-- end-write:end -->';
+const END_CHAT_START = '<!-- end-chat:start -->';
+const END_CHAT_END = '<!-- end-chat:end -->';
+
+function upsertSection(content: string, markerStart: string, markerEnd: string, sectionBody: string): string {
+  const section = `\n\n${markerStart}\n${sectionBody}\n${markerEnd}\n`;
+  const startIndex = content.indexOf(markerStart);
+  const endIndex = content.indexOf(markerEnd);
+
+  if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+    const before = content.slice(0, startIndex);
+    const after = content.slice(endIndex + markerEnd.length);
+    return `${before}${section}${after}`.trimEnd() + '\n';
+  }
+
+  return `${content.trimEnd()}${section}`;
+}
 
 function App() {
   const {
@@ -74,10 +94,17 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isTOCOpen, setIsTOCOpen] = useState(false);
   const [showEndPage, setShowEndPage] = useState(false);
+  const [endMode, setEndMode] = useState<'write' | 'chat'>('write');
   const [endThoughts, setEndThoughts] = useState('');
+  const [endChatMessages, setEndChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; timestamp: number }>>([]);
+  const [endChatInput, setEndChatInput] = useState('');
+  const [endChatSummary, setEndChatSummary] = useState('');
+  const [endChatLoading, setEndChatLoading] = useState(false);
+  const [endChatError, setEndChatError] = useState<string | null>(null);
   const [aiContext, setAiContext] = useState<{ text: string; cfi: string; chapterTitle: string } | null>(null);
   const [uiVisible, setUiVisible] = useState(true);
   const hideUiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const endWriteSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const bookLayoutRef = useRef<BookLayoutRef>(null);
 
   useEffect(() => {
@@ -85,7 +112,12 @@ function App() {
       loadHighlightsForBook(currentBook.id);
       loadNotes(currentBook);
       setShowEndPage(false);
+      setEndMode('write');
       setEndThoughts('');
+      setEndChatMessages([]);
+      setEndChatInput('');
+      setEndChatSummary('');
+      setEndChatError(null);
     }
   }, [currentBook?.id, loadHighlightsForBook, loadNotes]);
 
@@ -287,7 +319,12 @@ function App() {
   }, [panelMode, setPanelMode]);
 
   const handleToggleAI = useCallback(() => {
-    setPanelMode(panelMode === 'ai' ? 'reading' : 'ai');
+    if (panelMode === 'ai') {
+      setPanelMode('reading');
+      setAiContext(null);
+      return;
+    }
+    setPanelMode('ai');
   }, [panelMode, setPanelMode]);
 
   const handleEscape = useCallback(() => {
@@ -323,15 +360,91 @@ function App() {
     await storage.saveNotes(currentBook.id, normalized);
   }, [currentBook, setNoteContent]);
 
-  const handleSubmitEndThoughts = useCallback(async () => {
-    const thoughts = endThoughts.trim();
-    if (!thoughts) return;
+  useEffect(() => {
+    if (!showEndPage || endMode !== 'write') {
+      return;
+    }
 
-    const stamp = new Date().toLocaleString();
-    const section = `\n\n## End Notes\n\n${thoughts}\n\n*Added on ${stamp}*\n\n---\n`;
-    await persistNotesImmediately(noteContent + section);
-    setEndThoughts('');
-  }, [endThoughts, noteContent, persistNotesImmediately]);
+    if (endWriteSyncTimeoutRef.current) {
+      clearTimeout(endWriteSyncTimeoutRef.current);
+    }
+
+    endWriteSyncTimeoutRef.current = setTimeout(() => {
+      const body = `## End Reflections\n\n${endThoughts.trim() || '_No reflection yet._'}\n\n---`;
+      const updated = upsertSection(noteContent, END_WRITE_START, END_WRITE_END, body);
+      if (updated !== noteContent) {
+        persistNotesImmediately(updated);
+      }
+    }, 600);
+
+    return () => {
+      if (endWriteSyncTimeoutRef.current) {
+        clearTimeout(endWriteSyncTimeoutRef.current);
+      }
+    };
+  }, [showEndPage, endMode, endThoughts, noteContent, persistNotesImmediately]);
+
+  const handleEndChatSend = useCallback(async () => {
+    const question = endChatInput.trim();
+    if (!question || endChatLoading) return;
+
+    setEndChatLoading(true);
+    setEndChatError(null);
+    setEndChatInput('');
+
+    const userMessage = { role: 'user' as const, content: question, timestamp: Date.now() };
+    const nextMessages = [...endChatMessages, userMessage];
+    setEndChatMessages(nextMessages);
+
+    try {
+      const llmService = getLLMService();
+      const history: ChatMessage[] = endChatMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+      }));
+      const response = await llmService.chat(question, {
+        bookTitle: currentBook?.title || 'this book',
+        conversationHistory: history,
+        maxTokens: 2000,
+      });
+      setEndChatMessages((prev) => [...prev, { role: 'assistant', content: response, timestamp: Date.now() }]);
+    } catch (error) {
+      console.error('End chat failed:', error);
+      setEndChatError(error instanceof Error ? error.message : 'Chat failed');
+    } finally {
+      setEndChatLoading(false);
+    }
+  }, [endChatInput, endChatLoading, endChatMessages, currentBook?.title]);
+
+  const handleEndChatSummarize = useCallback(async () => {
+    if (endChatMessages.length === 0 || endChatLoading) return;
+
+    setEndChatLoading(true);
+    setEndChatError(null);
+    try {
+      const llmService = getLLMService();
+      const history: ChatMessage[] = endChatMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+      }));
+      const summary = await llmService.summarizeConversation({
+        conversationHistory: history,
+        format: 'bullet-points',
+      });
+      setEndChatSummary(summary);
+
+      const body = `## End Chat Summary\n\n${summary}\n\n---`;
+      const updated = upsertSection(noteContent, END_CHAT_START, END_CHAT_END, body);
+      await persistNotesImmediately(updated);
+    } catch (error) {
+      console.error('End chat summarize failed:', error);
+      setEndChatError(error instanceof Error ? error.message : 'Summary failed');
+    } finally {
+      setEndChatLoading(false);
+    }
+  }, [endChatMessages, endChatLoading, noteContent, persistNotesImmediately]);
 
   const handleExportNotes = useCallback(async () => {
     if (!currentBook) return;
@@ -364,6 +477,11 @@ function App() {
   const handleDiscussWithAI = useCallback(() => {
     if (selection) {
       setCurrentSelection(selection);
+      setAiContext({
+        text: selection.text,
+        cfi: selection.cfi,
+        chapterTitle: selection.chapterTitle,
+      });
     }
     clearSelection();
     setPanelMode('ai');
@@ -444,10 +562,19 @@ function App() {
             progress={progress.percentage}
             onContentClick={hideUi}
             showEndPage={showEndPage}
+            endMode={endMode}
+            onEndModeChange={setEndMode}
             endThoughts={endThoughts}
             onEndThoughtsChange={setEndThoughts}
-            onEndSubmit={handleSubmitEndThoughts}
             onEndExport={handleExportNotes}
+            endChatMessages={endChatMessages}
+            endChatInput={endChatInput}
+            onEndChatInputChange={setEndChatInput}
+            onEndChatSend={handleEndChatSend}
+            onEndChatSummarize={handleEndChatSummarize}
+            endChatSummary={endChatSummary}
+            endChatLoading={endChatLoading}
+            endChatError={endChatError}
           />
 
           <TableOfContents
@@ -471,7 +598,10 @@ function App() {
 
           <AIOverlay
             isOpen={panelMode === 'ai'}
-            onClose={() => setPanelMode('reading')}
+            onClose={() => {
+              setPanelMode('reading');
+              setAiContext(null);
+            }}
             bookTitle={currentBook.title}
             bookId={currentBook.id}
             initialContext={aiContext}

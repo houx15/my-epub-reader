@@ -30,6 +30,7 @@ export class EPUBService {
   private renderVersion: number = 0;
   private keyListenerDocs: WeakSet<Document> = new WeakSet();
   private currentTypography: Partial<TypographySettings> = {};
+  private locationsReadyCallbacks: Set<() => void> = new Set();
 
   /**
    * Generate a stable book ID from the file path
@@ -300,9 +301,14 @@ export class EPUBService {
 
     // Generate locations for pagination in background (non-blocking)
     // This enables percentage tracking but is not required for basic next/prev
-    this.book.locations.generate(1024).catch((err: Error) => {
-      console.warn('Failed to generate locations:', err);
-    });
+    this.book.locations
+      .generate(1024)
+      .then(() => {
+        this.locationsReadyCallbacks.forEach((callback) => callback());
+      })
+      .catch((err: Error) => {
+        console.warn('Failed to generate locations:', err);
+      });
   }
 
   /**
@@ -391,6 +397,13 @@ export class EPUBService {
         });
       }
     });
+  }
+
+  onLocationsReady(callback: () => void): () => void {
+    this.locationsReadyCallbacks.add(callback);
+    return () => {
+      this.locationsReadyCallbacks.delete(callback);
+    };
   }
 
   /**
@@ -610,8 +623,15 @@ export class EPUBService {
       return { currentPage: 0, totalPages: 0, percentage: 0 };
     }
 
-    const percentage = location.start.percentage || 0;
+    let percentage = location.start.percentage || 0;
     const totalLocations = this.book.locations.length();
+
+    if (percentage <= 0 && totalLocations > 0 && location.start.cfi) {
+      const derivedPercentage = this.book.locations.percentageFromCfi(location.start.cfi);
+      if (typeof derivedPercentage === 'number' && Number.isFinite(derivedPercentage) && derivedPercentage >= 0) {
+        percentage = derivedPercentage;
+      }
+    }
     
     if (totalLocations > 0) {
       // Clamp currentPage to valid range [1, totalLocations]

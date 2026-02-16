@@ -45,6 +45,7 @@ export function useEPUB(): UseEPUBReturn {
   const epubService = useRef(getEPUBService());
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedCFIRef = useRef<string | null>(null);
+  const locationsReadyUnsubscribeRef = useRef<(() => void) | null>(null);
 
   const normalizeHref = useCallback((href: string): string => href.split('#')[0], []);
 
@@ -154,6 +155,13 @@ export function useEPUB(): UseEPUBReturn {
     try {
       await epubService.current.renderToElement(element, width, height);
 
+      if (locationsReadyUnsubscribeRef.current) {
+        locationsReadyUnsubscribeRef.current();
+      }
+      locationsReadyUnsubscribeRef.current = epubService.current.onLocationsReady(() => {
+        updateProgress();
+      });
+
       // Apply current theme
       const effectiveTheme = getEffectiveTheme(theme);
       epubService.current.setTheme(effectiveTheme);
@@ -205,6 +213,7 @@ export function useEPUB(): UseEPUBReturn {
       if (currentBook.lastReadPosition.cfi) {
         await epubService.current.goToLocation(currentBook.lastReadPosition.cfi);
       }
+      updateProgress();
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to render book');
       setError(error);
@@ -212,6 +221,14 @@ export function useEPUB(): UseEPUBReturn {
       throw error;
     }
   }, [currentBook, theme, updateProgress, findChapterByHref, chapters]);
+
+  useEffect(() => {
+    return () => {
+      if (locationsReadyUnsubscribeRef.current) {
+        locationsReadyUnsubscribeRef.current();
+      }
+    };
+  }, []);
 
   /**
    * Navigate to a chapter
